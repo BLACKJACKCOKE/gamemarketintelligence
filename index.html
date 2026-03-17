@@ -1,14 +1,2807 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Market Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root {
+  --bg-base:       #07080C;
+  --bg-surface:    #0F1117;
+  --bg-elevated:   #191C26;
+  --bg-card:       #1A1D2A;
+  --border:        rgba(0,212,255,0.1);
+  --border-subtle: rgba(255,255,255,0.06);
+  --cyan:     #00D4FF;
+  --gold:     #FFD166;
+  --green:    #00FF9D;
+  --orange:   #FF8C42;
+  --red:      #FF3B5C;
+  --purple:   #BD93F9;
+  --outcome-success:        #00FF9D;
+  --outcome-success-bg:     rgba(0,255,157,0.07);
+  --outcome-success-border: rgba(0,255,157,0.25);
+  --outcome-failure:        #FF3B5C;
+  --outcome-failure-bg:     rgba(255,59,92,0.07);
+  --outcome-failure-border: rgba(255,59,92,0.25);
+  --outcome-mixed:          #FFD166;
+  --outcome-mixed-bg:       rgba(255,209,102,0.07);
+  --outcome-mixed-border:   rgba(255,209,102,0.25);
+  --tier1: #00FF9D;
+  --tier2: #FFD166;
+  --tier3: #5A7A96;
+  --valid-pass: #00FF9D;
+  --valid-warn: #FFD166;
+  --valid-fail: #FF3B5C;
+  --text-primary:   #E8F4FF;
+  --text-secondary: #7AA8C8;
+  --text-muted:     #3D6380;
+  --font-display: 'Rajdhani', sans-serif;
+  --font-data:    'JetBrains Mono', monospace;
+  --font-body:    'Sora', sans-serif;
+  --nav-w: 196px;
+  --top-h: 48px;
+  --filter-h: 52px;
+  --sidebar-w: 272px;
+  --status-h: 34px;
+  --radius: 8px;
+  --region-apac:  #00D4FF;
+  --region-na:    #00FF9D;
+  --region-eu:    #FFD166;
+  --region-latam: #FF8C42;
+  --region-mea:   #BD93F9;
+}
+
+
+
+/* ─── ABBR TOOLTIP ─── */
+abbr[title] {
+  text-decoration: underline dotted rgba(0,212,255,0.5);
+  cursor: help;
+  position: relative;
+}
+abbr[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--cyan);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 5px;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ─── FX CONTROL ─── */
+.fx-control {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(0,212,255,0.05);
+  border: 1px solid rgba(0,212,255,0.18);
+  border-radius: 6px; padding: 4px 10px;
+}
+.fx-label { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); letter-spacing:1px; }
+.fx-input {
+  width: 68px; background: var(--bg-elevated);
+  border: 1px solid rgba(0,212,255,0.25); border-radius: 4px;
+  color: var(--cyan); font-family: var(--font-data); font-size: 13px; font-weight:500;
+  padding: 2px 6px; text-align: center;
+}
+.fx-input:focus { outline: none; border-color: var(--cyan); }
+.fx-unit { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); }
+.fx-btn {
+  background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.3);
+  color: var(--cyan); font-family: var(--font-data); font-size: 10px; font-weight:600;
+  border-radius: 4px; padding: 2px 8px; cursor: pointer; letter-spacing:0.5px;
+  transition: background 0.15s;
+}
+.fx-btn:hover { background: rgba(0,212,255,0.22); }
+.fx-rate-badge {
+  font-family: var(--font-data); font-size: 10px; color: var(--gold);
+  background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.2);
+  border-radius: 4px; padding: 2px 6px; white-space: nowrap;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── GRID ─── */
+.app-shell {
+  display: grid;
+  grid-template-rows: var(--top-h) var(--filter-h) 1fr var(--status-h);
+  grid-template-columns: var(--nav-w) 1fr var(--sidebar-w);
+  grid-template-areas:
+    "topbar topbar topbar"
+    "filterbar filterbar filterbar"
+    "leftnav main sidebar"
+    "statusbar statusbar statusbar";
+  height: 100vh;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  grid-area: topbar;
+  background: rgba(10,11,18,0.98);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(12px);
+}
+.topbar-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  letter-spacing: 2px; color: var(--cyan);
+}
+.topbar-logo span { color: var(--text-muted); font-size: 12px; letter-spacing: 1px; }
+.topbar-hex { font-size: 22px; }
+.topbar-meta {
+  display: flex; align-items: center; gap: 20px;
+  font-family: var(--font-data); font-size: 11px; color: var(--text-muted);
+}
+.topbar-meta .badge {
+  padding: 3px 10px; border-radius: 4px;
+  background: rgba(0,255,157,0.1); border: 1px solid rgba(0,255,157,0.2);
+  color: var(--green); font-size: 10px; letter-spacing: 0.5px;
+}
+.topbar-meta .badge-warn {
+  background: rgba(255,209,102,0.1); border-color: rgba(255,209,102,0.2);
+  color: var(--gold);
+}
+.topbar-nextu { color: var(--gold); }
+
+/* ─── FILTER BAR ─── */
+.filterbar {
+  grid-area: filterbar;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 16px;
+  position: sticky; top: var(--top-h); z-index: 90;
+  overflow-x: auto;
+}
+.filter-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.filter-label { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.filter-btn {
+  padding: 4px 10px; border-radius: 4px; font-size: 11px; font-family: var(--font-body);
+  background: transparent; border: 1px solid var(--border-subtle);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.filter-btn.active { background: rgba(0,212,255,0.12); border-color: rgba(0,212,255,0.35); color: var(--cyan); }
+.filter-sep { width: 1px; height: 24px; background: var(--border-subtle); }
+.filter-tag {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-data); font-size: 11px;
+  color: var(--text-secondary);
+  padding: 3px 10px; border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-subtle);
+}
+.filter-reset {
+  margin-left: auto; padding: 4px 12px; font-size: 11px; font-family: var(--font-data);
+  background: transparent; border: 1px solid var(--border-subtle);
+  color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-reset:hover { border-color: var(--orange); color: var(--orange); }
+
+/* ─── LEFT NAV ─── */
+.leftnav {
+  grid-area: leftnav;
+  display: flex; flex-direction: column;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  padding: 16px 0;
+  overflow-y: auto;
+}
+.nav-section { margin-bottom: 8px; }
+.nav-section-label {
+  padding: 6px 16px; font-family: var(--font-data); font-size: 9px;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; cursor: pointer; transition: all 0.15s;
+  font-size: 13px; color: var(--text-secondary); border-left: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-item:hover { background: rgba(0,212,255,0.05); color: var(--text-primary); }
+.nav-item.active {
+  background: rgba(0,212,255,0.08); color: var(--cyan);
+  border-left-color: var(--cyan);
+  font-weight: 600;
+}
+.nav-item .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+.nav-item .nav-badge {
+  margin-left: auto; padding: 1px 6px; border-radius: 10px; font-size: 9px;
+  font-family: var(--font-data); background: rgba(255,255,255,0.08);
+  color: var(--text-muted);
+}
+
+/* ─── MAIN CONTENT ─── */
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--bg-base);
+}
+.view { display: none; }
+.view.active { display: block; }
+.section-title {
+  font-family: var(--font-display); font-size: 20px; font-weight: 700;
+  letter-spacing: 1px; color: var(--text-primary); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* ─── CARD ─── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover { border-color: rgba(0,212,255,0.2); }
+.card--accent::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border-subtle);
+}
+.card-title {
+  font-family: var(--font-display); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-secondary);
+}
+.card-body { padding: 16px; }
+
+/* ─── KPI CARDS ─── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px; margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.15s;
+  cursor: pointer;
+}
+.kpi-card:hover { border-color: rgba(0,212,255,0.3); transform: translateY(-1px); }
+.kpi-card::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+.kpi-value {
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  color: var(--text-primary); letter-spacing: 0.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: block; line-height: 1.2;
+}
+.kpi-unit { font-size: 16px; color: var(--text-secondary); }
+.kpi-label { font-size: 11px; color: var(--text-muted); margin: 4px 0; letter-spacing: 0.3px; }
+.kpi-yoy { font-family: var(--font-data); font-size: 12px; }
+.kpi-yoy.up { color: var(--green); }
+.kpi-yoy.down { color: var(--red); }
+.kpi-source { font-family: var(--font-data); font-size: 9px; color: var(--text-muted); margin-top: 6px; }
+.kpi-tier {
+  position: absolute; top: 10px; right: 10px;
+  font-family: var(--font-data); font-size: 9px; font-weight: 700;
+  padding: 2px 5px; border-radius: 3px;
+  cursor: help;
+}
+.tier-t1 { background: rgba(0,255,157,0.1); color: var(--tier1); border: 1px solid rgba(0,255,157,0.2); }
+.tier-t2 { background: rgba(255,209,102,0.1); color: var(--tier2); border: 1px solid rgba(255,209,102,0.2); }
+.tier-t3 { background: rgba(90,122,150,0.1); color: var(--tier3); border: 1px solid rgba(90,122,150,0.2); }
+
+/* ─── CHARTS ─── */
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-grid-12 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-grid-21 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 16px; }
+.chart-wrapper {
+  position: relative; padding: 16px;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.chart-container { position: relative; }
+
+/* ─── TABLE ─── */
+.data-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px; font-family: var(--font-data);
+}
+.data-table th {
+  background: var(--bg-elevated); color: var(--text-muted);
+  padding: 8px 12px; text-align: left; font-size: 10px;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.data-table tr:hover td { background: rgba(0,212,255,0.03); }
+.data-table .num { color: var(--text-primary); font-weight: 500; }
+.data-table .up { color: var(--green); }
+.data-table .down { color: var(--red); }
+.data-table .warn { color: var(--gold); }
+.data-table .forecast { color: var(--text-muted); font-style: italic; }
+.data-table .highlight { background: rgba(0,212,255,0.05) !important; }
+.forecast-band { background: rgba(255,209,102,0.03) !important; }
+
+/* ─── REGION BAR ─── */
+.region-bar-list { display: flex; flex-direction: column; gap: 10px; }
+.region-bar-item { display: flex; align-items: center; gap: 12px; }
+.region-bar-label { font-family: var(--font-data); font-size: 11px; width: 48px; color: var(--text-secondary); }
+.region-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.region-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.region-bar-value { font-family: var(--font-data); font-size: 10px; color: var(--text-primary); width: 70px; text-align: right; white-space: nowrap; }
+.region-bar-yoy { font-family: var(--font-data); font-size: 10px; width: 44px; text-align: right; }
+
+/* ─── INSIGHT CARDS ─── */
+.insight-grid { display: flex; flex-direction: column; gap: 12px; }
+.insight-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 14px 14px 14px 18px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.15s;
+}
+.insight-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.insight-card--success { border-color: var(--outcome-success-border); }
+.insight-card--success::before { background: var(--outcome-success); }
+.insight-card--failure { border-color: var(--outcome-failure-border); }
+.insight-card--failure::before { background: var(--outcome-failure); }
+.insight-card--mixed { border-color: var(--outcome-mixed-border); }
+.insight-card--mixed::before { background: var(--outcome-mixed); }
+.insight-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.outcome-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-data); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; white-space: nowrap;
+}
+.outcome-badge--success { background: var(--outcome-success-bg); color: var(--outcome-success); border: 1px solid var(--outcome-success-border); }
+.outcome-badge--failure { background: var(--outcome-failure-bg); color: var(--outcome-failure); border: 1px solid var(--outcome-failure-border); }
+.outcome-badge--mixed { background: var(--outcome-mixed-bg); color: var(--outcome-mixed); border: 1px solid var(--outcome-mixed-border); }
+.insight-date { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); }
+.insight-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.insight-summary { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.insight-lesson {
+  margin-top: 8px; padding: 6px 10px;
+  background: rgba(255,255,255,0.03); border-left: 2px solid rgba(255,255,255,0.1);
+  border-radius: 0 4px 4px 0; font-size: 11px; color: var(--text-secondary);
+  font-style: italic;
+}
+.insight-footer { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.cat-badge {
+  padding: 2px 7px; border-radius: 10px; font-size: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+.source-link {
+  font-family: var(--font-data); font-size: 10px; color: var(--text-muted);
+  text-decoration: none; border: 1px solid var(--border-subtle);
+  padding: 2px 7px; border-radius: 4px; transition: all 0.15s; margin-left: auto;
+}
+.source-link:hover { color: var(--cyan); border-color: rgba(0,212,255,0.3); }
+.credibility { color: var(--gold); font-size: 10px; }
+
+/* ─── OUTCOME FILTER TABS ─── */
+.outcome-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.outcome-tab {
+  padding: 6px 16px; border-radius: 20px; font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.1); background: transparent;
+  color: var(--text-secondary); cursor: pointer; transition: all 0.18s;
+  font-family: var(--font-body);
+}
+.outcome-tab:hover { border-color: rgba(255,255,255,0.25); color: var(--text-primary); }
+.outcome-tab.active-all { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); color: var(--text-primary); }
+.outcome-tab.active-success { background: var(--outcome-success-bg); border-color: var(--outcome-success-border); color: var(--outcome-success); }
+.outcome-tab.active-failure { background: var(--outcome-failure-bg); border-color: var(--outcome-failure-border); color: var(--outcome-failure); }
+.outcome-tab.active-mixed { background: var(--outcome-mixed-bg); border-color: var(--outcome-mixed-border); color: var(--outcome-mixed); }
+
+/* ─── DISTRIBUTION BAR ─── */
+.outcome-dist {
+  display: flex; gap: 12px; padding: 12px 16px;
+  background: var(--bg-elevated); border-radius: 6px;
+  border: 1px solid var(--border-subtle); margin-bottom: 16px;
+  align-items: center; flex-wrap: wrap;
+}
+.outcome-dist-item { display: flex; align-items: center; gap: 6px; font-family: var(--font-data); font-size: 11px; }
+.outcome-dist-bar { height: 4px; border-radius: 2px; min-width: 4px; }
+.outcome-dist-total { margin-left: auto; color: var(--text-muted); font-size: 10px; }
+
+/* ─── TICKER ─── */
+.ticker-wrap {
+  background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius); padding: 0; overflow: hidden;
+  margin-bottom: 20px;
+}
+.ticker-label {
+  display: inline-flex; align-items: center; padding: 0 12px;
+  background: rgba(0,212,255,0.1); border-right: 1px solid var(--border);
+  font-family: var(--font-data); font-size: 9px; color: var(--cyan);
+  letter-spacing: 1px; text-transform: uppercase; height: 36px;
+  white-space: nowrap;
+}
+.ticker-content {
+  display: inline-flex; align-items: center;
+  height: 36px; padding: 0 20px;
+  font-size: 12px; color: var(--text-secondary);
+  animation: ticker-slide 24s linear infinite;
+  white-space: nowrap;
+}
+.ticker-content .icon { margin-right: 6px; }
+@keyframes ticker-slide {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+.ticker-wrap:hover .ticker-content { animation-play-state: paused; }
+
+/* ─── RISK CHIPS ─── */
+.risk-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 6px; font-size: 11px;
+  background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+}
+.risk-chip.risk-high { border-color: rgba(255,59,92,0.3); background: rgba(255,59,92,0.06); }
+.risk-chip.risk-mid  { border-color: rgba(255,140,66,0.3); background: rgba(255,140,66,0.06); }
+.risk-chip.risk-low  { border-color: rgba(255,209,102,0.3); background: rgba(255,209,102,0.06); }
+.risk-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ─── FPS PANEL ─── */
+.fps-table { width: 100%; }
+.fps-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+.fps-row:last-child { border-bottom: none; }
+.fps-row:hover { background: rgba(0,212,255,0.04); border-radius: 4px; }
+.fps-cat { font-size: 11px; color: var(--text-muted); width: 100px; flex-shrink: 0; }
+.fps-text { flex: 1; font-size: 12px; color: var(--text-secondary); }
+.fps-badge { margin-left: auto; }
+
+/* ─── SOURCE CARDS ─── */
+.source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.source-card {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius); padding: 16px; transition: border-color 0.15s;
+}
+.source-card:hover { border-color: rgba(0,212,255,0.25); }
+.source-card-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.source-status { font-size: 11px; margin-bottom: 8px; }
+.source-stars { color: var(--gold); font-size: 12px; }
+.source-scope { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.source-reports { list-style: none; }
+.source-reports li { margin-bottom: 4px; }
+.source-reports a { font-family: var(--font-data); font-size: 10px; color: var(--cyan); text-decoration: none; }
+.source-reports a:hover { text-decoration: underline; }
+
+/* ─── VALIDATION ─── */
+.validation-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.validation-id { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); width: 44px; }
+.validation-name { flex: 1; color: var(--text-secondary); }
+.validation-result { font-family: var(--font-data); font-size: 11px; width: 160px; color: var(--text-muted); }
+.validation-status { font-size: 16px; }
+.vi-pass { color: var(--valid-pass); }
+.vi-warn { color: var(--valid-warn); animation: pulse 2s ease infinite; }
+.vi-fail { color: var(--valid-fail); animation: pulse 1.5s ease infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  padding: 16px;
+}
+.sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.sidebar-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--red); letter-spacing: 1px; }
+.sidebar-ts { font-family: var(--font-data); font-size: 9px; color: var(--text-muted); }
+.sidebar-cat-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.sidebar-tab {
+  padding: 3px 8px; border-radius: 3px; font-size: 10px;
+  border: 1px solid var(--border-subtle); background: transparent;
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.sidebar-tab:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+.sidebar-tab.active { background: rgba(0,212,255,0.1); border-color: var(--border); color: var(--cyan); }
+.sidebar-mini-card {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: 6px; padding: 10px; margin-bottom: 8px;
+  position: relative; overflow: hidden; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.sidebar-mini-card:hover { border-color: rgba(0,212,255,0.2); }
+.sidebar-mini-card--success { border-left: 2px solid var(--outcome-success); }
+.sidebar-mini-card--failure { border-left: 2px solid var(--outcome-failure); }
+.sidebar-mini-card--mixed  { border-left: 2px solid var(--outcome-mixed); }
+.sidebar-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.sidebar-card-title { font-size: 11px; color: var(--text-primary); font-weight: 500; }
+.sidebar-card-lesson { font-size: 10px; color: var(--text-muted); font-style: italic; margin-top: 3px; }
+.sidebar-dist { padding: 8px; background: var(--bg-elevated); border-radius: 4px; margin: 8px 0; }
+.sidebar-risks-label { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; display: block; }
+.sidebar-risk-chip {
+  display: flex; align-items: center; gap: 6px; padding: 5px 8px;
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: 4px; font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;
+}
+
+/* ─── STATUS BAR ─── */
+.statusbar {
+  grid-area: statusbar;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  font-family: var(--font-data); font-size: 10px; color: var(--text-muted);
+}
+.statusbar-checks { display: flex; gap: 12px; }
+.statusbar-version { color: var(--cyan); }
+
+/* ─── TABS (sub) ─── */
+.sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.sub-tab {
+  padding: 7px 16px; border-radius: 6px; font-size: 12px;
+  border: 1px solid var(--border-subtle); background: transparent;
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.sub-tab:hover { background: rgba(0,212,255,0.05); color: var(--text-primary); }
+.sub-tab.active { background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.3); color: var(--cyan); }
+
+/* ─── MISC ─── */
+.spacer-16 { height: 16px; }
+.spacer-8 { height: 8px; }
+.text-cyan { color: var(--cyan); }
+.text-gold { color: var(--gold); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.font-mono { font-family: var(--font-data); }
+.tag-chip {
+  display: inline-flex; padding: 2px 8px; border-radius: 10px;
+  font-family: var(--font-data); font-size: 9px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+  color: var(--text-muted); margin: 2px;
+}
+.tag-chip.success { background: var(--outcome-success-bg); border-color: var(--outcome-success-border); color: var(--outcome-success); }
+.tag-chip.failure { background: var(--outcome-failure-bg); border-color: var(--outcome-failure-border); color: var(--outcome-failure); }
+.tag-chip.mixed { background: var(--outcome-mixed-bg); border-color: var(--outcome-mixed-border); color: var(--outcome-mixed); }
+.search-box {
+  width: 100%; padding: 8px 12px; border-radius: 6px; font-size: 12px;
+  background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+  color: var(--text-primary); font-family: var(--font-body); margin-bottom: 12px;
+  outline: none; transition: border-color 0.15s;
+}
+.search-box:focus { border-color: rgba(0,212,255,0.3); }
+.forecast-note {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-data); font-size: 9px; color: var(--gold);
+  padding: 2px 8px; border-radius: 3px; border: 1px dashed rgba(255,209,102,0.3);
+  background: rgba(255,209,102,0.05);
+}
+.source-scope-diagram {
+  background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius); padding: 20px; font-family: var(--font-data);
+  font-size: 11px; color: var(--text-secondary); position: relative; overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { display: none; }
+}
+@media (max-width: 900px) {
+  :root { --nav-w: 0px; }
+  .leftnav { display: none; }
+  .app-shell { grid-template-areas: "topbar" "filterbar" "main" "statusbar"; grid-template-columns: 1fr; }
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid-2, .chart-grid-12, .chart-grid-21 { grid-template-columns: 1fr; }
+  .source-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+
+<div class="app-shell">
+
+<!-- ─── TOPBAR ─── -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <span class="topbar-hex">📊</span>
+    GAME MARKET INTELLIGENCE
+    <span>Global Gaming Industry Data · 2025A</span>
+  </div>
+  <div class="fx-control">
+    <span class="fx-label">환율</span>
+    <input type="number" id="fxInput" class="fx-input" value="1450" min="900" max="3000" step="10">
+    <span class="fx-unit">₩/USD</span>
+    <button class="fx-btn" onclick="applyRate()">적용</button>
+    <span class="fx-rate-badge" id="fxBadge">₩1,450 기준</span>
+  </div>
+  <div class="topbar-meta">
+    <span>기준: <strong class="text-cyan">2026-03-17</strong></span>
+    <span class="badge">✅ 15 PASS</span>
+    <span class="badge badge-warn">⚠️ 4 WARN</span>
+    <span class="topbar-nextu">D-31 다음 업데이트</span>
+    <span>v1.2</span>
+  </div>
+</header>
+
+<!-- ─── FILTER BAR (info only) ─── -->
+<div class="filterbar" id="filterbar">
+  <div class="filter-group">
+    <span class="filter-label">플랫폼</span>
+    <span class="filter-tag">📱 모바일</span>
+    <span class="filter-tag">🖥️ PC</span>
+    <span class="filter-tag">🎮 콘솔</span>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">지역</span>
+    <span class="filter-tag" style="color:var(--region-apac)">APAC</span>
+    <span class="filter-tag" style="color:var(--region-na)">NA</span>
+    <span class="filter-tag" style="color:var(--region-eu)">EU</span>
+    <span class="filter-tag" style="color:var(--region-latam)">LatAm</span>
+    <span class="filter-tag" style="color:var(--region-mea)">MEA</span>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">데이터</span>
+    <span class="filter-tag">실적</span>
+    <span class="filter-tag" style="color:var(--gold)">예측</span>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">소스</span>
+    <span class="filter-tag">Newzoo</span>
+    <span class="filter-tag">Sensor Tower</span>
+    <span class="filter-tag">BCG</span>
+  </div>
+</div>
+
+<!-- ─── LEFT NAV ─── -->
+<nav class="leftnav">
+  <div class="nav-section">
+    <div class="nav-section-label">마켓 데이터</div>
+    <div class="nav-item active" onclick="showView('v1')"><span class="nav-icon">📊</span> 개요 Overview</div>
+    <div class="nav-item" onclick="showView('v2')"><span class="nav-icon">💰</span> 매출 Revenue</div>
+    <div class="nav-item" onclick="showView('v3')"><span class="nav-icon">👥</span> 플레이어 Players</div>
+    <div class="nav-item" onclick="showView('v4')"><span class="nav-icon">🌏</span> 지역 Region</div>
+    <div class="nav-item" onclick="showView('v5')"><span class="nav-icon">🎯</span> 장르 Genre</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-label">인텔리전스</div>
+    <div class="nav-item" onclick="showView('v10')"><span class="nav-icon">🔫</span> FPS 심층 분석</div>
+    <div class="nav-item" onclick="showView('v7')"><span class="nav-icon">🔥</span> 인사이트 Intel</div>
+    <div class="nav-item" onclick="showView('v8')"><span class="nav-icon">🚨</span> 산업 리스크</div>
+    <div class="nav-item" onclick="showView('v9')"><span class="nav-icon">📡</span> 출처 Sources</div>
+  </div>
+  <div class="nav-section" style="margin-top:auto;border-top:1px solid var(--border-subtle);padding-top:10px">
+    <div class="nav-section-label">DATA</div>
+    <div class="nav-item" onclick="showView('v6')"><span class="nav-icon">🔬</span> DATA 정합성 <span class="nav-badge">15✅ 4⚠️</span></div>
+  </div>
+</nav>
+
+<!-- ─── MAIN CONTENT ─── -->
+<main class="main">
+
+<!-- ═══════════════ V1: OVERVIEW ═══════════════ -->
+<div id="v1" class="view active">
+  <div class="ticker-wrap" style="display:flex">
+    <div class="ticker-label">🔥 LIVE SIGNAL</div>
+    <div style="overflow:hidden;flex:1">
+      <div class="ticker-content" id="tickerContent"></div>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip">
+    <div class="kpi-card card--accent" onclick="showView('v2')">
+      <div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div>
+      <div class="kpi-value" data-usd-b="197.0" data-fmt="jo"></div>
+      <div class="kpi-label">글로벌 총 시장 매출 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div>
+      <div class="kpi-yoy up">↑ +7.5% YoY</div>
+      <div class="kpi-source">Newzoo Dec 2025 ↗</div>
+    </div>
+    <div class="kpi-card" onclick="showView('v3')">
+      <div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div>
+      <div class="kpi-value" data-cnt-b="3.578"></div>
+      <div class="kpi-label">글로벌 총 플레이어 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div>
+      <div class="kpi-yoy up">↑ +4.4% YoY</div>
+      <div class="kpi-source">Newzoo Sep 2025 ↗</div>
+    </div>
+    <div class="kpi-card" onclick="showView('v3')">
+      <div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div>
+      <div class="kpi-value" data-cnt-b="1.600"></div>
+      <div class="kpi-label">유료 플레이어 Payer (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div>
+      <div class="kpi-yoy up">↑ +4.9% YoY</div>
+      <div class="kpi-source">Newzoo Sep 2025 ↗</div>
+    </div>
+    <div class="kpi-card" onclick="showView('v3')">
+      <div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div>
+      <div class="kpi-value" data-usd-pp="119.7" data-fmt="pp"></div>
+      <div class="kpi-label">Payer 연간 지출 ARPU (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div>
+      <div class="kpi-yoy" style="color:var(--gold)">⚠️ 해석 주의</div>
+      <div class="kpi-source">Newzoo Sep 2025 ↗</div>
+    </div>
+    <div class="kpi-card" onclick="showView('v6')">
+      <div class="kpi-tier tier-t1" style="background:rgba(0,255,157,0.1);color:var(--green)" title="AUTO — 자동 검증값 : V6 정합성 엔진이 교차검증 실행한 결과 (수동 입력값 아님)">AUTO</div>
+      <div class="kpi-value" style="font-size:22px">✅ 15 <span class="kpi-unit">⚠️ 4</span></div>
+      <div class="kpi-label">데이터 정합성 상태</div>
+      <div class="kpi-yoy" style="color:var(--text-muted)">→ V6 검증 뷰</div>
+      <div class="kpi-source">검증 실행: 2026-03-17</div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="chart-grid-12">
+    <div class="card card--accent">
+      <div class="card-header">
+        <div class="card-title">🌐 글로벌 시장 규모 시계열 (Newzoo <abbr title="Software — 게임 소프트웨어 판매 기준 (하드웨어·광고·구독 제외)">SW</abbr> 기준)</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="forecast-note">···  2026~2028 전망</span>
+          <span class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</span>
+        </div>
+      </div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:220px"><canvas id="chartGlobal"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">📊 플랫폼 쉐어 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div></div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:220px"><canvas id="chartPlatformDonut"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Platform YoY -->
+  <div class="chart-grid-3">
+    <div class="card">
+      <div class="card-header"><div class="card-title">📱 모바일 2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr></div></div>
+      <div class="card-body" style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--cyan)" data-usd-b="108.0" data-fmt="jo"></div>
+        <div style="font-family:var(--font-data);font-size:13px;color:var(--green);margin:4px 0">↑ +7.7% YoY</div>
+        <div style="font-size:11px;color:var(--text-muted)">쉐어 55% | 플레이어 <span data-cnt-b="2.985"></span></div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:6px">다운로드: <span data-dl-b="50.41"></span> ↓ -7.2%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">🖥️ PC 2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr></div></div>
+      <div class="card-body" style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--cyan)" data-usd-b="43.0" data-fmt="jo"></div>
+        <div style="font-family:var(--font-data);font-size:13px;color:var(--green);margin:4px 0">↑ +10.4% YoY 🚀</div>
+        <div style="font-size:11px;color:var(--text-muted)">쉐어 22% | 플레이어 <span data-cnt-m="936"></span></div>
+        <div style="font-size:10px;color:var(--gold);margin-top:6px">2028F <span data-usd-b="52.1" data-fmt="jo"></span>, Console 추월</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">🎮 콘솔 2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr></div></div>
+      <div class="card-body" style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--cyan)" data-usd-b="45.3" data-fmt="jo"></div>
+        <div style="font-family:var(--font-data);font-size:13px;color:var(--green);margin:4px 0">↑ +4.2% YoY</div>
+        <div style="font-size:11px;color:var(--text-muted)">쉐어 23% | 플레이어 <span data-cnt-m="645"></span></div>
+        <div style="font-size:10px;color:var(--red);margin-top:6px">MTX -6.3% ❌ 역성장</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Region Bar -->
+  <div class="card card--accent" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-title">🌍 5대 지역 매출 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Newzoo)</div>
+      <span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">클릭 → V4 지역 뷰</span>
+    </div>
+    <div class="card-body">
+      <div class="region-bar-list">
+        <div class="region-bar-item" onclick="showView('v4')">
+          <div class="region-bar-label">APAC</div>
+          <div class="region-bar-track"><div class="region-bar-fill" style="width:46%;background:var(--region-apac)"></div></div>
+          <div class="region-bar-value" data-usd-b="87.6" data-fmt="jo"></div>
+          <div class="kpi-yoy up region-bar-yoy">+2.3%</div>
+          <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);width:36px;text-align:right">46%</div>
+        </div>
+        <div class="region-bar-item" onclick="showView('v4')">
+          <div class="region-bar-label">NA</div>
+          <div class="region-bar-track"><div class="region-bar-fill" style="width:28%;background:var(--region-na)"></div></div>
+          <div class="region-bar-value" data-usd-b="52.7" data-fmt="jo"></div>
+          <div class="kpi-yoy up region-bar-yoy">+4.2%</div>
+          <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);width:36px;text-align:right">28%</div>
+        </div>
+        <div class="region-bar-item" onclick="showView('v4')">
+          <div class="region-bar-label">EU</div>
+          <div class="region-bar-track"><div class="region-bar-fill" style="width:18%;background:var(--region-eu)"></div></div>
+          <div class="region-bar-value" data-usd-b="33.1" data-fmt="jo"></div>
+          <div class="kpi-yoy up region-bar-yoy">+3.6%</div>
+          <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);width:36px;text-align:right">18%</div>
+        </div>
+        <div class="region-bar-item" onclick="showView('v4')">
+          <div class="region-bar-label">LatAm</div>
+          <div class="region-bar-track"><div class="region-bar-fill" style="width:4.4%;background:var(--region-latam)"></div></div>
+          <div class="region-bar-value" data-usd-b="8.3" data-fmt="jo"></div>
+          <div class="kpi-yoy up region-bar-yoy">+6.4%</div>
+          <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);width:36px;text-align:right">4%</div>
+        </div>
+        <div class="region-bar-item" onclick="showView('v4')">
+          <div class="region-bar-label">MEA</div>
+          <div class="region-bar-track"><div class="region-bar-fill" style="width:3.8%;background:var(--region-mea)"></div></div>
+          <div class="region-bar-value" data-usd-b="7.1" data-fmt="jo"></div>
+          <div class="kpi-yoy up region-bar-yoy" style="color:var(--gold)">+7.5% 🔥</div>
+          <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);width:36px;text-align:right">4%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ V2: REVENUE ═══════════════ -->
+<div id="v2" class="view">
+  <div class="section-title">💰 매출 Revenue</div>
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="setSubTab(this,'v2-tabs','v2-t1')">전체 시계열</button>
+    <button class="sub-tab" onclick="setSubTab(this,'v2-tabs','v2-t2')">PC vs Console</button>
+    <button class="sub-tab" onclick="setSubTab(this,'v2-tabs','v2-t3')">비즈니스 모델</button>
+    <button class="sub-tab" onclick="setSubTab(this,'v2-tabs','v2-t4')">BCG 수익 모델</button>
+  </div>
+  <div id="v2-tabs">
+    <div id="v2-t1">
+      <div class="card card--accent" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">글로벌 플랫폼별 매출 시계열 (2022–2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr>)</div>
+          <span class="forecast-note">···  2026<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr>~ 전망 구간</span>
+        </div>
+        <div class="chart-wrapper"><div class="chart-container" style="height:300px"><canvas id="chartRevenue"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">시계열 원데이터 (Newzoo 공식 시리즈)</div></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th rowspan="2" style="vertical-align:middle">연도</th>
+                <th rowspan="2" style="vertical-align:middle">총 매출</th>
+                <th rowspan="2" style="vertical-align:middle">YoY</th>
+                <th colspan="2" style="text-align:center;background:rgba(0,212,255,0.12);color:var(--cyan);border-bottom:2px solid var(--cyan)">📱 모바일</th>
+                <th colspan="2" style="text-align:center;background:rgba(255,209,102,0.10);color:var(--gold);border-bottom:2px solid var(--gold)">🎮 콘솔</th>
+                <th colspan="2" style="text-align:center;background:rgba(0,255,157,0.10);color:var(--green);border-bottom:2px solid var(--green)">🖥️ PC</th>
+              </tr>
+              <tr>
+                <th style="background:rgba(0,212,255,0.06);color:var(--cyan)">매출</th>
+                <th style="background:rgba(0,212,255,0.06);color:var(--cyan)">쉐어</th>
+                <th style="background:rgba(255,209,102,0.05);color:var(--gold)">매출</th>
+                <th style="background:rgba(255,209,102,0.05);color:var(--gold)">쉐어</th>
+                <th style="background:rgba(0,255,157,0.05);color:var(--green)">매출</th>
+                <th style="background:rgba(0,255,157,0.05);color:var(--green)">쉐어</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>2022</td><td class="num" data-usd-b="173.8" data-fmt="jo"></td><td>—</td><td style="background:rgba(0,212,255,0.04)" data-usd-b="95.6" data-fmt="jo"></td><td style="background:rgba(0,212,255,0.04);color:var(--cyan)">55%</td><td style="background:rgba(255,209,102,0.03)" data-usd-b="43.5" data-fmt="jo"></td><td style="background:rgba(255,209,102,0.03);color:var(--gold)">25%</td><td style="background:rgba(0,255,157,0.03)" data-usd-b="34.8" data-fmt="jo"></td><td style="background:rgba(0,255,157,0.03);color:var(--green)">20%</td></tr>
+              <tr><td>2023</td><td class="num" data-usd-b="176.8" data-fmt="jo"></td><td class="up">+1.7%</td><td style="background:rgba(0,212,255,0.04)" data-usd-b="95.5" data-fmt="jo"></td><td style="background:rgba(0,212,255,0.04);color:var(--cyan)">54%</td><td style="background:rgba(255,209,102,0.03)" data-usd-b="44.2" data-fmt="jo"></td><td style="background:rgba(255,209,102,0.03);color:var(--gold)">25%</td><td style="background:rgba(0,255,157,0.03)" data-usd-b="37.1" data-fmt="jo"></td><td style="background:rgba(0,255,157,0.03);color:var(--green)">21%</td></tr>
+              <tr><td>2024</td><td class="num" data-usd-b="182.5" data-fmt="jo"></td><td class="up">+3.2%</td><td style="background:rgba(0,212,255,0.04)" data-usd-b="100.4" data-fmt="jo"></td><td style="background:rgba(0,212,255,0.04);color:var(--cyan)">55%</td><td style="background:rgba(255,209,102,0.03)" data-usd-b="43.8" data-fmt="jo"></td><td style="background:rgba(255,209,102,0.03);color:var(--gold)">24%</td><td style="background:rgba(0,255,157,0.03)" data-usd-b="38.3" data-fmt="jo"></td><td style="background:rgba(0,255,157,0.03);color:var(--green)">21%</td></tr>
+              <tr class="highlight"><td><strong>2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr></strong></td><td class="num"><strong data-usd-b="197.0" data-fmt="jo"></strong></td><td class="up"><strong>+7.5%</strong></td><td style="background:rgba(0,212,255,0.07)"><strong data-usd-b="108.0" data-fmt="jo"></strong></td><td style="background:rgba(0,212,255,0.07);color:var(--cyan)"><strong>55%</strong></td><td style="background:rgba(255,209,102,0.05)"><strong data-usd-b="45.3" data-fmt="jo"></strong></td><td style="background:rgba(255,209,102,0.05);color:var(--gold)"><strong>23%</strong></td><td style="background:rgba(0,255,157,0.05)"><strong data-usd-b="43.0" data-fmt="jo"></strong></td><td style="background:rgba(0,255,157,0.05);color:var(--green)"><strong>22%</strong></td></tr>
+              <tr class="forecast-band"><td class="forecast">2026<abbr title="Forecast — 전망치 (분析기관 예측)">F</abbr></td><td class="forecast" data-usd-b="196.1" data-fmt="jo"></td><td class="up forecast">~+4.8%</td><td class="forecast" style="background:rgba(0,212,255,0.03)" data-usd-b="105.9" data-fmt="jo"></td><td class="forecast" style="background:rgba(0,212,255,0.03);color:var(--cyan)">54%</td><td class="forecast" style="background:rgba(255,209,102,0.02)" data-usd-b="48.5" data-fmt="jo"></td><td class="forecast" style="background:rgba(255,209,102,0.02);color:var(--gold)">25%</td><td class="forecast" style="background:rgba(0,255,157,0.02)" data-usd-b="45.8" data-fmt="jo"></td><td class="forecast" style="background:rgba(0,255,157,0.02);color:var(--green)">23%</td></tr>
+              <tr class="forecast-band"><td class="forecast">2027<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr></td><td class="forecast" data-usd-b="201.6" data-fmt="jo"></td><td class="up forecast">~+2.8%</td><td class="forecast" style="background:rgba(0,212,255,0.03)" data-usd-b="106.8" data-fmt="jo"></td><td class="forecast" style="background:rgba(0,212,255,0.03);color:var(--cyan)">53%</td><td class="forecast" style="background:rgba(255,209,102,0.02)" data-usd-b="50.5" data-fmt="jo"></td><td class="forecast" style="background:rgba(255,209,102,0.02);color:var(--gold)">25%</td><td class="forecast" style="background:rgba(0,255,157,0.02)" data-usd-b="48.9" data-fmt="jo"></td><td class="forecast" style="background:rgba(0,255,157,0.02);color:var(--green)">24%</td></tr>
+              <tr class="forecast-band"><td class="forecast">2028<abbr title="Forecast — 전망치 (분析기관 예측)">F</abbr></td><td class="forecast"><strong data-usd-b="215" data-fmt="jo"></strong></td><td class="up forecast">~+3.5%</td><td class="forecast" style="background:rgba(0,212,255,0.03)" data-usd-b="115" data-fmt="jo"></td><td class="forecast" style="background:rgba(0,212,255,0.03);color:var(--cyan)">53%</td><td class="forecast text-gold" style="background:rgba(255,209,102,0.02)"><strong data-usd-b="51.6" data-fmt="jo"></strong></td><td class="forecast" style="background:rgba(255,209,102,0.02);color:var(--gold)">24%</td><td class="forecast text-gold" style="background:rgba(0,255,157,0.02)"><strong data-usd-b="52.1" data-fmt="jo"></strong></td><td class="forecast" style="background:rgba(0,255,157,0.02);color:var(--green)">24%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="v2-t2" style="display:none">
+      <div class="card card--accent" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">⚡ PC vs Console 매출 시계열 — 2028년 역전 예측</div>
+          <div style="font-family:var(--font-data);font-size:10px;color:var(--gold)">PC CAGR 6.6% vs Console 4.4%</div>
+        </div>
+        <div class="chart-wrapper"><div class="chart-container" style="height:280px"><canvas id="chartPCvsConsole"></canvas></div></div>
+        <div style="padding:12px 16px;background:rgba(255,209,102,0.05);border-top:1px solid rgba(255,209,102,0.15)">
+          <span style="font-size:12px;color:var(--gold)">✦ 2028년 PC가 Console 매출 최초 추월 — PC <span data-usd-b="52.1" data-fmt="jo"></span> vs Console <span data-usd-b="51.6" data-fmt="jo"></span></span>
+          <span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);margin-left:12px">출처: Newzoo PC&Console Report 2026 (Feb 2026)</span>
+        </div>
+      </div>
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">PC+Console 합산 시계열 (2015~2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr>)</div></div>
+          <div class="chart-wrapper"><div class="chart-container" style="height:220px"><canvas id="chartPCConTotal"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">BCG 광의 시장 vs Newzoo <abbr title="Software — 게임 소프트웨어 판매 기준 (하드웨어·광고·구독 제외)">SW</abbr> 기준</div></div>
+          <div class="chart-wrapper"><div class="chart-container" style="height:220px"><canvas id="chartBCGvsNZ"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="v2-t3" style="display:none">
+      <div class="chart-grid-2">
+        <div class="card card--accent">
+          <div class="card-header"><div class="card-title">🖥️ PC 비즈니스 모델 분해 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div></div>
+          <div class="chart-wrapper"><div class="chart-container" style="height:220px"><canvas id="chartPCBM"></canvas></div></div>
+          <div style="padding:12px 16px">
+            <table class="data-table">
+              <thead><tr><th>BM</th><th>매출</th><th>YoY</th><th>쉐어</th></tr></thead>
+              <tbody>
+                <tr><td>마이크로트랜잭션 (MTX)</td><td class="num" data-usd-b="20.6" data-fmt="jo"></td><td class="up">+10.6%</td><td>48%</td></tr>
+                <tr><td>프리미엄</td><td class="num" data-usd-b="12.5" data-fmt="jo"></td><td class="up">+11.8%</td><td>29%</td></tr>
+                <tr><td>DLC</td><td class="num" data-usd-b="8.5" data-fmt="jo"></td><td class="up">+7.9%</td><td>20%</td></tr>
+                <tr><td>인게임 구독</td><td class="num" data-usd-b="1.4" data-fmt="jo"></td><td class="up">+10.3%</td><td>3%</td></tr>
+                <tr class="highlight"><td><strong>PC 합계</strong></td><td class="num"><strong data-usd-b="43.0" data-fmt="jo"></strong></td><td class="up"><strong>+10.4%</strong></td><td>100%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card card--accent">
+          <div class="card-header"><div class="card-title">🎮 콘솔 비즈니스 모델 분해 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div></div>
+          <div class="chart-wrapper"><div class="chart-container" style="height:220px"><canvas id="chartConsoleBM"></canvas></div></div>
+          <div style="padding:12px 16px">
+            <table class="data-table">
+              <thead><tr><th>BM</th><th>매출</th><th>YoY</th><th>쉐어</th></tr></thead>
+              <tbody>
+                <tr><td>프리미엄</td><td class="num" data-usd-b="22.7" data-fmt="jo"></td><td class="up">+12.1%</td><td>50%</td></tr>
+                <tr><td>마이크로트랜잭션 (MTX)</td><td class="num" data-usd-b="12.3" data-fmt="jo"></td><td class="down">-6.3% ❌</td><td>27%</td></tr>
+                <tr><td>멀티게임 구독</td><td class="num" data-usd-b="8.2" data-fmt="jo"></td><td class="up">+5.5%</td><td>18%</td></tr>
+                <tr><td>DLC</td><td class="num" data-usd-b="2.2" data-fmt="jo"></td><td class="up">+7.9%</td><td>5%</td></tr>
+                <tr class="highlight"><td><strong>콘솔 합계</strong></td><td class="num"><strong data-usd-b="45.3" data-fmt="jo"></strong></td><td class="up"><strong>+4.2%</strong></td><td>100%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="v2-t4" style="display:none">
+      <div class="card card--accent" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">BCG 수익 모델별 매출 (2025<abbr title="Estimate — 추정치 (잠정 집계)">E</abbr>, 광의 기준)</div>
+          <span class="forecast-note">광의: <abbr title="Software — 게임 소프트웨어">SW</abbr>+<abbr title="Hardware — 게임 하드웨어 (콘솔 본체 등)">HW</abbr>+광고+구독 포함 <span data-usd-b="263" data-fmt="jo"></span></span>
+        </div>
+        <div class="chart-wrapper"><div class="chart-container" style="height:260px"><canvas id="chartBCGBM"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>수익 유형</th><th>2025<abbr title="Estimate — 추정치 (잠정 집계)">E</abbr> 규모</th><th>CAGR 2020-25</th><th>CAGR 2025-30<abbr title="Estimate — 추정치 (잠정 집계)">E</abbr></th><th>신호</th></tr></thead>
+            <tbody>
+              <tr><td>In-app Purchases (IAP)</td><td class="num" data-usd-b="128.7" data-fmt="jo"></td><td class="up">+2%</td><td class="up">+5%</td><td>📈</td></tr>
+              <tr><td>Game Transactional</td><td class="num" data-usd-b="69.6" data-fmt="jo"></td><td>0%</td><td class="up">+3%</td><td>➡️</td></tr>
+              <tr><td>Advertising</td><td class="num" data-usd-b="31.9" data-fmt="jo"></td><td class="up">+19%</td><td class="up">+9%</td><td>📈</td></tr>
+              <tr><td>Console Hardware</td><td class="num" data-usd-b="18.3" data-fmt="jo"></td><td class="up">+3%</td><td class="down">-7%</td><td>📉</td></tr>
+              <tr><td><strong>Multi-game Subscription 🔥</strong></td><td class="num"><strong data-usd-b="13.7" data-fmt="jo"></strong></td><td class="up"><strong>+52%</strong></td><td class="up"><strong>+74%</strong></td><td>🚀</td></tr>
+              <tr><td>Streaming Service</td><td class="num" data-usd-b="0.6" data-fmt="jo"></td><td class="up">+57%</td><td class="up">+69%</td><td>🚀</td></tr>
+              <tr class="highlight"><td><strong>BCG 광의 합계</strong></td><td class="num"><strong data-usd-b="263" data-fmt="jo"></strong></td><td>—</td><td class="up"><strong>CAGR +6%</strong></td><td>→<span data-usd-b="350" data-fmt="jo"></span>(2030)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ V3: PLAYERS ═══════════════ -->
+<div id="v3" class="view">
+  <div class="section-title">👥 플레이어 Players</div>
+  <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card card--accent"><div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div><div class="kpi-value" data-cnt-b="3.578"></div><div class="kpi-label">총 플레이어 (Unique, 2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div><div class="kpi-yoy up">↑ +4.4%</div></div>
+    <div class="kpi-card"><div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div><div class="kpi-value" data-cnt-b="2.985"></div><div class="kpi-label">모바일 플레이어 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div><div class="kpi-yoy up">↑ +4.5%</div></div>
+    <div class="kpi-card"><div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div><div class="kpi-value" data-cnt-b="1.600"></div><div class="kpi-label">유료 Payer (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div><div class="kpi-yoy up">↑ +4.9%</div></div>
+    <div class="kpi-card"><div class="kpi-tier tier-t1" title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)">T1</div><div class="kpi-value" data-usd-pp="119.7" data-fmt="pp"></div><div class="kpi-label">Payer ARPU (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div><div class="kpi-yoy" style="color:var(--gold)">⚠️ 산술 17.8만원 차이</div></div>
+  </div>
+  <div class="chart-grid-2">
+    <div class="card card--accent">
+      <div class="card-header"><div class="card-title">글로벌 플레이어 수 시계열 (2022~2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr>)</div></div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:260px"><canvas id="chartPlayers"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">플랫폼별 플레이어 분포 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div></div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:260px"><canvas id="chartPlayersBreakdown"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">플레이어 시계열 데이터 (Newzoo)</div></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>연도</th><th>총 플레이어</th><th>YoY</th><th>모바일</th><th>PC</th><th>콘솔</th><th>플랫폼 합산*</th><th>유료 Payer</th><th>Payer 비율</th></tr></thead>
+        <tbody>
+          <tr><td>2022</td><td class="num">~32.2억명</td><td>—</td><td>27.2억명</td><td>8.8억명</td><td>5.9억명</td><td>~41.9억명</td><td>~13.8억명</td><td>~43%</td></tr>
+          <tr><td>2023</td><td class="num">~32.8억명</td><td class="up">~+1.9%</td><td>27.6억명</td><td>8.8억명</td><td>6.2억명</td><td>~42.5억명</td><td>~14.1억명</td><td>~43%</td></tr>
+          <tr><td>2024</td><td class="num">34.3억명</td><td class="up">+4.5%</td><td>28.6억명</td><td>9.1억명</td><td>6.3억명</td><td>~43.9억명</td><td>~15.2억명</td><td>~44%</td></tr>
+          <tr class="highlight"><td><strong>2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr></strong></td><td class="num"><strong>35.8억명</strong></td><td class="up"><strong>+4.4%</strong></td><td><strong>29.9억명</strong></td><td><strong>9.4억명</strong></td><td><strong>6.5억명</strong></td><td><strong>45.7억명</strong></td><td><strong>16억명</strong></td><td><strong>44%</strong></td></tr>
+          <tr class="forecast-band"><td class="forecast">2026<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr></td><td class="forecast">~37.2억명</td><td class="up forecast">~+4%</td><td class="forecast">~31.2억명</td><td class="forecast">9.7억명</td><td class="forecast">6.6억명</td><td class="forecast">~47.4억명</td><td class="forecast">~16.7억명</td><td class="forecast">~45%</td></tr>
+          <tr class="forecast-band"><td class="forecast">2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr></td><td class="forecast">~40억명</td><td class="up forecast">~+3.6%</td><td class="forecast">~33.2억명</td><td class="forecast"><strong>10.2억명</strong></td><td class="forecast">6.9억명</td><td class="forecast">~50.3억명</td><td class="forecast">~18억명</td><td class="forecast">~45%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="spacer-16"></div>
+  <div style="background:rgba(255,209,102,0.05);border:1px solid rgba(255,209,102,0.2);border-radius:8px;padding:14px">
+    <div style="font-size:12px;color:var(--gold);margin-bottom:6px">⚠️ 플레이어 수 중복 구조 해설</div>
+    <div style="font-size:11px;color:var(--text-secondary)">플랫폼별 합산(45.7억명)이 총계(35.8억명) 초과는 크로스플랫폼 이용자(~9.9억명) 존재 때문으로 오류 아님. BCG: 50% 게이머가 복수 플랫폼 이용.</div>
+  </div>
+</div>
+
+<!-- ═══════════════ V4: REGION ═══════════════ -->
+<div id="v4" class="view">
+  <div class="section-title">🌏 지역 Region</div>
+  <!-- ⚠️ 지역 합산 vs 총계 괴리 경고 배너 -->
+  <div style="background:rgba(255,209,102,0.07);border:1px solid rgba(255,209,102,0.3);border-radius:6px;padding:10px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start">
+    <div style="flex:0 0 auto;font-size:18px;line-height:1">⚠️</div>
+    <div style="flex:1;min-width:200px">
+      <div style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px">지역 합산 ↔ 총계 괴리 — $8.2B 공개</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6">
+        5대 지역 합산 <strong style="color:var(--text-primary)">$188.8B</strong> ← Newzoo 2025 지역별 공식 집계 (<abbr title="T1 — Tier 1 : 공식 1차 출처 데이터" style="cursor:help;text-decoration:underline dotted rgba(0,212,255,0.3)">T1</abbr>) &nbsp;|&nbsp;
+        글로벌 총계 확정치 <strong style="color:var(--cyan)">$197.0B</strong> ← Newzoo Dec2025 최종 (<abbr title="T1 — Tier 1 : 공식 1차 출처 데이터" style="cursor:help;text-decoration:underline dotted rgba(0,212,255,0.3)">T1</abbr>)
+        &nbsp;&nbsp;<strong style="color:var(--gold)">괴리: +$8.2B (+4.3%)</strong>
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">원인(<abbr title="T3 — Tier 3 : 추정·전망치" style="cursor:help;text-decoration:underline dotted rgba(255,209,102,0.3)">T3</abbr> 추정): ① 지역 미분류·중복 제거 집계 차이 ② 지역 데이터 집계 시점(분기말) vs 총계 확정 시점(연말) 차이 ③ 일부 크로스플랫폼·클라우드 수익 지역 미배분 → 지역 쉐어(%)는 $188.8B 기준, 매출 절대값은 $197B 기준으로 각각 해석</div>
+    </div>
+    <div style="flex:0 0 auto;text-align:right">
+      <div style="font-family:var(--font-data);font-size:9px;color:var(--text-muted)">소스: Newzoo 2025</div>
+      <div style="font-family:var(--font-data);font-size:10px;color:var(--gold)">⚠️ WARN</div>
+    </div>
+  </div>
+  <div class="chart-grid-12">
+    <div class="card card--accent">
+      <div class="card-header"><div class="card-title">5대 지역 매출 비교 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div></div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:280px"><canvas id="chartRegion"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">지역 쉐어</div></div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:280px"><canvas id="chartRegionPie"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><div class="card-title">지역별 매출 시계열 (2024<abbr title="Estimate — 추정치 (잠정 집계)">E</abbr> → 2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr> → 2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr>)</div></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>지역</th><th>2024<abbr title="Estimate — 추정치 (잠정 집계)">E</abbr></th><th>2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr></th><th>YoY</th><th>글로벌 쉐어</th><th>2026<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr></th><th>2027<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr></th><th>2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr></th><th>CAGR</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--region-apac)"><strong>아시아태평양 (APAC)</strong></td><td data-usd-b="85.6" data-fmt="jo"></td><td class="num"><strong data-usd-b="87.6" data-fmt="jo"></strong></td><td class="up">+2.3%</td><td><strong>46%</strong></td><td class="forecast" data-usd-b="89.6" data-fmt="jo"></td><td class="forecast" data-usd-b="91.7" data-fmt="jo"></td><td class="forecast" data-usd-b="93.8" data-fmt="jo"></td><td class="up">+2.3%/yr</td></tr>
+          <tr><td style="color:var(--region-na)"><strong>북미 (NA)</strong></td><td data-usd-b="50.6" data-fmt="jo"></td><td class="num"><strong data-usd-b="52.7" data-fmt="jo"></strong></td><td class="up">+4.2%</td><td>28%</td><td class="forecast" data-usd-b="54.9" data-fmt="jo"></td><td class="forecast" data-usd-b="57.2" data-fmt="jo"></td><td class="forecast" data-usd-b="59.6" data-fmt="jo"></td><td class="up">+4.2%/yr</td></tr>
+          <tr><td style="color:var(--region-eu)"><strong>유럽 (EU)</strong></td><td data-usd-b="31.9" data-fmt="jo"></td><td class="num"><strong data-usd-b="33.1" data-fmt="jo"></strong></td><td class="up">+3.6%</td><td>18%</td><td class="forecast" data-usd-b="34.3" data-fmt="jo"></td><td class="forecast" data-usd-b="35.6" data-fmt="jo"></td><td class="forecast" data-usd-b="36.8" data-fmt="jo"></td><td class="up">+3.6%/yr</td></tr>
+          <tr><td style="color:var(--region-latam)"><strong>라틴아메리카 (LatAm)</strong></td><td data-usd-b="7.8" data-fmt="jo"></td><td class="num"><strong data-usd-b="8.3" data-fmt="jo"></strong></td><td class="up">+6.4%</td><td>4%</td><td class="forecast" data-usd-b="8.8" data-fmt="jo"></td><td class="forecast" data-usd-b="9.4" data-fmt="jo"></td><td class="forecast" data-usd-b="10.0" data-fmt="jo"></td><td class="up">+6.4%/yr</td></tr>
+          <tr><td style="color:var(--region-mea)"><strong>중동·아프리카 (MEA) 🔥</strong></td><td data-usd-b="6.6" data-fmt="jo"></td><td class="num"><strong data-usd-b="7.1" data-fmt="jo"></strong></td><td class="up">+7.5% 최고</td><td>4%</td><td class="forecast" data-usd-b="7.6" data-fmt="jo"></td><td class="forecast" data-usd-b="8.2" data-fmt="jo"></td><td class="forecast" data-usd-b="8.8" data-fmt="jo"></td><td class="up">+7.5%/yr</td></tr>
+          <tr class="highlight"><td><strong>글로벌 합계</strong></td><td><strong data-usd-b="182.5" data-fmt="jo"></strong></td><td class="num"><strong data-usd-b="188.8" data-fmt="jo"></strong></td><td class="up"><strong>+3.4%</strong></td><td>100%</td><td class="forecast" data-usd-b="195.2" data-fmt="jo"></td><td class="forecast" data-usd-b="202.1" data-fmt="jo"></td><td class="forecast" data-usd-b="209.0" data-fmt="jo"></td><td class="up">~+3.0%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+
+    <!-- 🇺🇸 미국 -->
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:4px;align-items:flex-start">
+        <div class="card-title">🇺🇸 미국</div>
+      </div>
+      <div class="card-body" style="padding:12px 14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--bg-elevated);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--cyan)"><span data-usd-b="52.7" data-fmt="jo"></span> <span class="kpi-tier tier-t1" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T1 — Tier 1 : 공식 1차 출처 데이터">T1</span></div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:3px">2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr> 북미NA (Newzoo)</div>
+          </div>
+          <div style="background:var(--bg-elevated);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green)"><span data-usd-b="45.8" data-fmt="jo"></span> <span class="kpi-tier tier-t3" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T3 — Tier 3 : 추정·전망치">T3</span></div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:3px">미국 단독 추정 (~87%)</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <tbody>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">NA 글로벌 순위</td><td class="num" style="font-size:11px">1위</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">NA 글로벌 쉐어</td><td class="num" style="font-size:11px">26.8%</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">게이머 인구</td><td class="num" style="font-size:11px">약 2.1억명 (64%)</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">플랫폼 강세</td><td class="num" style="font-size:11px">PC + 콘솔</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">Payer ARPU/yr</td><td class="num text-gold" style="font-size:11px"><span data-usd-pp="197" data-fmt="pp"></span></td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">AAA 소비</td><td class="num" style="font-size:11px">글로벌 최대</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">CAGR</td><td class="num up" style="font-size:11px">+4.2%/yr</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr> (NA)</td><td class="num" style="font-size:11px"><span data-usd-b="59.6" data-fmt="jo"></span> <span class="kpi-tier tier-t3" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T3 — Tier 3 : 추정·전망치">T3</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)">소스: Newzoo Dec 2025 (NA 기준 — 미국+캐나다 합산)</div>
+      </div>
+    </div>
+
+    <!-- 🇨🇳 중국 -->
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:4px;align-items:flex-start">
+        <div class="card-title">🇨🇳 중국</div>
+      </div>
+      <div class="card-body" style="padding:12px 14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--bg-elevated);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--cyan)"><span data-usd-b="49.8" data-fmt="jo"></span> <span class="kpi-tier tier-t2" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T2 — Tier 2 : 계산·파생값 또는 복수 소스 조합">T2</span></div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:3px">2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr> 전체 (Niko)</div>
+          </div>
+          <div style="background:var(--bg-elevated);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green)">+3.1%</div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:3px">YoY 성장률</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <tbody>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">글로벌 순위</td><td class="num" style="font-size:11px">2위</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">글로벌 쉐어</td><td class="num" style="font-size:11px">25.3%</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">APAC 내 비중</td><td class="num text-gold" style="font-size:11px">56.8%</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">게이머 인구</td><td class="num" style="font-size:11px">약 7.4억명 (52%)</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">플랫폼 강세</td><td class="num" style="font-size:11px">모바일 (~72%)</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">Steam PC</td><td class="num up" style="font-size:11px">⬆ 확산 중</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">CAGR</td><td class="num up" style="font-size:11px">~+3.0%/yr</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">규제 리스크</td><td class="num down" style="font-size:11px">판호 연간 ~300개 제한</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)">소스: Niko Partners 2025</div>
+      </div>
+    </div>
+
+    <!-- 🇯🇵 일본 -->
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:4px;align-items:flex-start">
+        <div class="card-title">🇯🇵 일본</div>
+      </div>
+      <div class="card-body" style="padding:12px 14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--bg-elevated);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--cyan)"><span data-usd-b="20.0" data-fmt="jo"></span> <span class="kpi-tier tier-t2" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T2 — Tier 2 : 계산·파생값 또는 복수 소스 조합">T2</span></div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:3px">2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr> 전체 (Niko)</div>
+          </div>
+          <div style="background:var(--bg-elevated);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green)"><span data-usd-b="8.5" data-fmt="jo"></span> <span class="kpi-tier tier-t2" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T2 — Tier 2 : 계산·파생값 또는 복수 소스 조합">T2</span></div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:3px">모바일 iOS (ST, 전체의 42%)</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <tbody>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">글로벌 순위</td><td class="num" style="font-size:11px">3위</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">글로벌 쉐어</td><td class="num" style="font-size:11px">10.2%</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">게이머 인구</td><td class="num" style="font-size:11px">약 7,800만명 (63%)</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">플랫폼 강세</td><td class="num" style="font-size:11px">콘솔 > 모바일</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">콘솔 특성</td><td class="num" style="font-size:11px">Nintendo Switch IP 충성도</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">엔저 영향</td><td class="num down" style="font-size:11px">USD 환산 억제</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">CAGR</td><td class="num up" style="font-size:11px">~+2.5%/yr</td></tr>
+            <tr><td style="font-size:11px;color:var(--text-secondary)">2028<abbr title="Forecast — 전망치 (분석기관 예측)">F</abbr> 추정</td><td class="num" style="font-size:11px"><span data-usd-b="23.0" data-fmt="jo"></span> <span class="kpi-tier tier-t3" style="position:static;font-size:8px;padding:1px 4px;cursor:help" title="T3 — Tier 3 : 추정·전망치">T3</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)">소스: Niko Partners 2025 · Sensor Tower</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ V5: GENRE ═══════════════ -->
+<div id="v5" class="view">
+  <div class="section-title">🎯 장르 Genre</div>
+
+  <!-- ── 📱 모바일 ── -->
+  <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--cyan);margin:0 0 10px;letter-spacing:0.5px;border-bottom:1px solid rgba(0,212,255,0.15);padding-bottom:6px">📱 모바일 장르 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Sensor Tower)</div>
+  <div style="margin-bottom:24px">
+    <!-- 모바일 장르 차트 -->
+    <div class="card card--accent" style="margin-bottom:16px">
+      <div class="card-header"><div class="card-title">📱 모바일 장르별 IAP 매출 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Sensor Tower)</div></div>
+      <div class="chart-wrapper"><div class="chart-container" style="height:240px"><canvas id="chartMobileGenre"></canvas></div></div>
+    </div>
+    <!-- 모바일 장르 상세 표 -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title">📱 모바일 장르 상세 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div>
+        <span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">수치 표시 장르: <span data-usd-b="67.3" data-fmt="jo"></span> / ST IAP: <span data-usd-b="82.0" data-fmt="jo"></span>(SoG) · <span data-usd-b="81.75" data-fmt="jo"></span>(SoM) <abbr title="SoG=State of Gaming 2026($82B) vs SoM=State of Mobile 2026($81.75B) — 집계 시점·범위 차이 $0.25B" style="cursor:help;color:var(--gold)">⚠️</abbr></span>
+      </div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>장르</th><th>IAP 매출</th><th>YoY</th><th>특이사항</th><th>아웃컴</th></tr></thead>
+          <tbody>
+            <tr><td>Strategy (4X) 🔥</td><td class="num"><span data-usd-b="20.2" data-fmt="jo"></span></td><td class="up">+성장 유지</td><td>Last War·Whiteout Survival 주도 — 유일한 성장 장르</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+            <tr><td>Puzzle</td><td class="num"><span data-usd-b="14.4" data-fmt="jo"></span></td><td>➡️ 정체</td><td>Royal Match 등 하이퍼 캐주얼에서 업그레이드 수요</td><td><span class="outcome-badge outcome-badge--mixed">⚡ MIXED</span></td></tr>
+            <tr><td>RPG</td><td class="num"><span data-usd-b="13.8" data-fmt="jo"></span></td><td class="down">-14.7% ❌</td><td>한국 주력 장르 글로벌 쇠퇴 — 국내 개발사 전략 전환 압박</td><td><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></td></tr>
+            <tr><td>Casual</td><td class="num"><span data-usd-b="10.2" data-fmt="jo"></span></td><td>➡️ 정체</td><td>다운로드 -7.2% 속 IAP 유지 — 수익화 집중 전환</td><td><span class="outcome-badge outcome-badge--mixed">⚡ MIXED</span></td></tr>
+            <tr><td>Shooter</td><td class="num"><span data-usd-b="8.7" data-fmt="jo"></span></td><td class="up">📈 성장</td><td>Delta Force·PUBG Mobile 견인 — PC 크로스오버 확산</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+            <tr><td>Hybrid-Casual</td><td class="num">—</td><td class="up">IAP +37% 🚀</td><td>크리에이터 친화·소셜 레이어 설계로 폭발 성장</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+            <tr><td>Hypercasual</td><td class="num">—</td><td class="down">다운로드 정체</td><td>광고 수익 모델 한계 — Hybrid-Casual로 이행 가속</td><td><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></td></tr>
+            <tr class="highlight"><td><strong>모바일 합계 (ST IAP)</strong></td><td class="num"><strong><span data-usd-b="82.0" data-fmt="jo"></span></strong> <abbr title="SoG $82B vs SoM $81.75B — $0.25B 차이 (보고서별 집계 시점 차이)" style="cursor:help;color:var(--gold);font-size:10px">SoG/SoM ⚠️</abbr></td><td class="up"><strong>+7.7%</strong></td><td>수치 표시 장르 합 $67.3B (82%), 잔여 ~$14.7B 기타 | SoM 기준 $81.75B(차이 $0.25B)</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 🎮 콘솔 ── -->
+  <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--gold);margin:0 0 10px;letter-spacing:0.5px;border-bottom:1px solid rgba(255,209,102,0.15);padding-bottom:6px">🎮 콘솔 장르 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Newzoo)</div>
+  <div style="margin-bottom:24px">
+<!-- 콘솔 장르 차트 -->
+      <div class="card card--accent" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">🎮 콘솔 장르별 매출 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Newzoo)</div></div>
+        <div class="chart-wrapper"><div class="chart-container" style="height:240px"><canvas id="chartConsoleGenre"></canvas></div></div>
+      </div>
+      <!-- 콘솔 장르 표 -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">🎮 콘솔 장르 상세 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div><span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">합산 표시 장르: <span data-usd-b="43.8" data-fmt="jo"></span> / 콘솔 전체 <span data-usd-b="45.3" data-fmt="jo"></span> (97%)</span></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>장르</th><th>매출</th><th>YoY</th><th>특이사항</th><th>아웃컴</th></tr></thead>
+            <tbody>
+              <tr><td>Sports</td><td class="num"><span data-usd-b="10.6" data-fmt="jo"></span></td><td class="up">+3.5%</td><td>EA Sports FC 26·NBA 2K26 주도</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Action</td><td class="num"><span data-usd-b="9.8" data-fmt="jo"></span></td><td>안정</td><td>오픈월드·소울라이크 꾸준한 수요</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Shooter</td><td class="num"><span data-usd-b="8.5" data-fmt="jo"></span></td><td>안정</td><td>CoD·BF6 등 멀티플랫폼 수요</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>RPG</td><td class="num"><span data-usd-b="7.2" data-fmt="jo"></span></td><td>안정</td><td>콘솔 RPG 견고한 수요 지속</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Racing</td><td class="num"><span data-usd-b="4.1" data-fmt="jo"></span></td><td>안정</td><td>Forza·GT7 등 안정 수요</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Adventure</td><td class="num"><span data-usd-b="3.6" data-fmt="jo"></span></td><td>안정</td><td>나이트적 IP 강세</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>MTX (전체)</td><td class="num">—</td><td class="down">-6.3% ❌</td><td>콘솔 MTX 역성장 구조화</td><td><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></td></tr>
+              <tr><td>Premium (전체)</td><td class="num">—</td><td class="up">+12.1%</td><td>패키지 게임 강세 전환</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr class="highlight"><td><strong>콘솔 합계</strong></td><td class="num"><strong><span data-usd-b="45.3" data-fmt="jo"></span></strong></td><td class="up"><strong>+4.2%</strong></td><td>표시 장르 합 $43.8B (97%), 잔여 ~$1.5B 기타</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  </div>
+
+  <!-- ── 🖥️ PC ── -->
+  <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--green);margin:0 0 10px;letter-spacing:0.5px;border-bottom:1px solid rgba(0,255,157,0.15);padding-bottom:6px">🖥️ PC 장르 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Newzoo)</div>
+  <div style="margin-bottom:16px">
+<!-- PC 장르 차트 -->
+      <div class="card card--accent" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">🖥️ PC 장르별 매출 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>, Newzoo)</div></div>
+        <div class="chart-wrapper"><div class="chart-container" style="height:240px"><canvas id="chartPCGenre"></canvas></div></div>
+      </div>
+      <!-- PC 장르 표 -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><div class="card-title">🖥️ PC 장르 상세 (2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr>)</div><span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">합산 표시 장르: <span data-usd-b="39.5" data-fmt="jo"></span> / PC 전체 <span data-usd-b="43.0" data-fmt="jo"></span> (92%)</span></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>장르</th><th>매출</th><th>YoY</th><th>특이사항</th><th>아웃컴</th></tr></thead>
+            <tbody>
+              <tr><td>Shooter</td><td class="num"><span data-usd-b="9.0" data-fmt="jo"></span></td><td class="down">-5.0% ❌</td><td>MAU Top5 독점 구조, 신규 진입 희석</td><td><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></td></tr>
+              <tr><td>Strategy</td><td class="num"><span data-usd-b="8.2" data-fmt="jo"></span></td><td class="up">↑ 성장</td><td>PC 성장 견인 핵심 장르</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>RPG</td><td class="num"><span data-usd-b="7.1" data-fmt="jo"></span></td><td>안정</td><td>PC RPG 꾸준한 수요</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Action</td><td class="num"><span data-usd-b="6.8" data-fmt="jo"></span></td><td>안정</td><td>콘솔 액션과 중복 수요</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Sports</td><td class="num"><span data-usd-b="4.5" data-fmt="jo"></span></td><td>안정</td><td>PC 스포츠 안정 수요</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>Simulation</td><td class="num"><span data-usd-b="3.9" data-fmt="jo"></span></td><td class="up">MAU +117%</td><td>2021 대비 장기 인게이지먼트 급성장</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr><td>F2P (전체)</td><td class="num">—</td><td class="down">-1.1%</td><td>F2P 수익 역성장 첫 확인</td><td><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></td></tr>
+              <tr><td>Premium (전체)</td><td class="num">—</td><td class="up">+17.4%</td><td>프리미엄 모델 강세 전환 확인</td><td><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></td></tr>
+              <tr class="highlight"><td><strong>PC 합계</strong></td><td class="num"><strong><span data-usd-b="43.0" data-fmt="jo"></span></strong></td><td class="up"><strong>+10.4%</strong></td><td>표시 장르 합 $39.5B (92%), 잔여 ~$3.5B 인디·캐주얼</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════ V10: FPS ═══════════════ -->
+<div id="v10" class="view">
+  <div class="section-title">🔫 FPS 심층 분석</div>
+<div class="card" style="border-color:rgba(255,59,92,0.3);margin-bottom:16px">
+        <div style="background:rgba(255,59,92,0.06);padding:12px 16px;border-bottom:1px solid rgba(255,59,92,0.2)">
+          <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--red)">❌ PC Shooter 장르 구조적 역성장 경고</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">카테고리 전체 <span data-usd-b="9.0" data-fmt="jo"></span> (-5% YoY) — MAU 상위 5개 타이틀 독점 구조 확인 (Newzoo 2025, <abbr title="T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)" style="cursor:help;text-decoration:underline dotted rgba(0,212,255,0.4)">T1</abbr>)</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-grid-2">
+            <div>
+              <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase">PC SHOOTER MAU 독점 구조 (2025년 연간 평균)</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-bottom:4px">소스: Sensor Tower SoG2026(T1) · Newzoo PC Report 2026(T1) | 순위: Fortnite>CS2>CoD>PUBG>BF6</div>
+              <div class="chart-container" style="height:180px"><canvas id="chartFPSMAU"></canvas></div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase">PC SHOOTER 매출 YoY 추이</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-bottom:6px">소스: Newzoo PC Gaming Report 2026 · T1 | 단위: 조원 (₩1,450 기준)</div>
+              <div class="chart-container" style="height:180px"><canvas id="chartFPSTrend"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card card--accent">
+        <div class="card-header"><div class="card-title">🎯 Project S 직결 액션 인사이트</div></div>
+        <div class="fps-table">
+          <div class="fps-row" onclick="window.open('https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">론칭 타이밍</div>
+            <div class="fps-text"><strong>2~5월 론칭이 하반기 대비 +34% 플레이어</strong> — Newzoo 2021-2024 4년 반복 통계<br><span style="font-size:11px;color:var(--text-muted)">Q1 2027 타이밍 ✅ 데이터 뒷받침</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://gam3s.gg/news/newzoo-2025-game-market-report/','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">FPS 시장 구조</div>
+            <div class="fps-text"><strong>PC Shooter <span data-usd-b="9.0" data-fmt="jo"></span>이나 -5% YoY. Top 5 MAU 독점</strong> — Newzoo 2025<br><span style="font-size:11px;color:var(--text-muted)">서브장르 차별화 없이 정면 경쟁 불가</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">아시아 FPS</div>
+            <div class="fps-text"><strong>중국 FPS 라이브스트리밍 TOP 10 진입. Delta Force 성공</strong> — Niko Partners<br><span style="font-size:11px;color:var(--text-muted)">아시아 선점 후 글로벌 확장 전략 유효</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">가격 전략</div>
+            <div class="fps-text"><strong><span data-usd-pp="30" data-fmt="pp"></span> 미만 신작 +156% 성장. 26개 <span data-usd-b="5" data-fmt="jo"></span>+ 달성</strong> — Newzoo + GIB<br><span style="font-size:11px;color:var(--text-muted)">저가 진입 → DLC/시즌패스 수익화 검토</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">LiveOps 필수</div>
+            <div class="fps-text"><strong>런치 후 4~8주 이탈 집중. LiveOps 부재 시 -60%</strong> — Newzoo<br><span style="font-size:11px;color:var(--text-muted)">SNF 이후 Live Ops 로드맵 사전 설계 필수</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://sensortower.com/report/state-of-gaming-2026','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">Co-op 레퍼런스</div>
+            <div class="fps-text"><strong>R.E.P.O.(2위), PEAK(3위) — 저가·소셜·크리에이터 친화</strong> — Sensor Tower<br><span style="font-size:11px;color:var(--text-muted)">Co-op 요소 + 소셜 레이어 설계 검토</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">Steam Deck</div>
+            <div class="fps-text"><strong>28% 개발자 최적화 중. GDC 4위 플랫폼</strong> — GDC 2026<br><span style="font-size:11px;color:var(--text-muted)">UE5 기반 Steam Deck 최적화 범위 확인</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--mixed">⚡ MIXED</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://www.businesswire.com/news/home/20260112348007/en/Nexon-Reports-ARC-Raiders-Passes-12.4-Million-Unit-Milestone','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">ARC Raiders<br><span style="font-size:9px;color:var(--gold)">🆕 2025.10</span></div>
+            <div class="fps-text"><strong>출시 15주 1,400만 판매 · Steam 10주 연속 1위 · 주간 DAU 600만명</strong> — Nexon IR Q4 2025, Alinea Analytics<br><span style="font-size:11px;color:var(--text-muted)">$40 AA가격 · PvPvE 추출 슈터 · 플레이어 91% 장기 리텐션 — "기존 공식 통하지 않는 시장에서 차별화 서브장르로 성공"</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://mein-mmo.de/en/marathon-reveals-bungies-biggest-problem-is-there-a-takeover-by-sony-looming,1556184/','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">Marathon<br><span style="font-size:9px;color:var(--red)">❌ 2026.03</span></div>
+            <div class="fps-text"><strong>Steam 최고 CCU 8.8만(88,337명) · 판매 추정 91~97만 (출시 2주) — ARC Raiders(~97만) 대비 약 18%에 불과</strong> — SteamDB · gamalytic · mein-mmo.de<br><span style="font-size:11px;color:var(--text-muted)">개발비 ~$250M · Bungie CEO 퇴임 · 아트 표절 스캔들 · 미완성 출시 강행 · 리뷰 지연 요청 → 신뢰 총체적 붕괴</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--failure">❌ FAILURE</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://substack.nikopartners.com/p/nexons-arc-raiders-reaches-124-million','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">Delta Force<br><span style="font-size:9px;color:var(--green)">✅ 2024.09</span></div>
+            <div class="fps-text"><strong>중국 DAU 3,000만 · 글로벌 모바일 5개월 매출 $300M · 2025 Steam Shooter 다운로드 TOP3</strong> — Tencent IR Q2 2025(T1) · PocketGamer<br><span style="font-size:11px;color:var(--text-muted)">F2P(PC) + $40유료(콘솔) 이중 전략 · 아시아 우선 글로벌 확장 · 배틀로얄+추출슈터 복합 장르 차별화</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--success">✅ SUCCESS</span></div>
+          </div>
+          <div class="fps-row" onclick="window.open('https://sensortower.com/blog/state-of-gaming-2026','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+            <div class="fps-cat">추출 슈터<br>서브장르</div>
+            <div class="fps-text"><strong>ARC Raiders · BF6 · Delta Force · Deadlock 동시 진입 — 2025년 Shooter 장르 내 추출 슈터 서브장르 최다 신규 타이틀</strong> — Sensor Tower SoG2026(T1)<br><span style="font-size:11px;color:var(--text-muted)">그러나 Marathon 실패 · 시장 과포화 신호 — 차별화 없는 추출 슈터는 ARC에 흡수될 위험 (Sensor Tower: "disrupting 5대 에버그린 아직 미달성")</span></div>
+            <div class="fps-badge"><span class="outcome-badge outcome-badge--mixed">⚡ MIXED</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARC Raiders 시장 반전 분석 카드 -->
+      <div class="card" style="border-color:rgba(0,255,157,0.25);margin-top:16px">
+        <div style="background:rgba(0,255,157,0.06);padding:12px 16px;border-bottom:1px solid rgba(0,255,157,0.15)">
+          <div style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green)">⚡ Q4 2025 PC Shooter 시장 반전 — ARC Raiders + BF6 충격</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">소스: Nexon IR Q4 2025 · Alinea Analytics · Sensor Tower SoG2026 · Newzoo PC&Console Report 2026 · Gam3s.gg</div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+            <div style="background:var(--bg-elevated);border-radius:6px;padding:10px;text-align:center;border:1px solid rgba(0,255,157,0.15)">
+              <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--green)">1,400만</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:3px">ARC Raiders 누적 판매<br>(15주 · Nexon IR T1)</div>
+            </div>
+            <div style="background:var(--bg-elevated);border-radius:6px;padding:10px;text-align:center;border:1px solid rgba(0,212,255,0.15)">
+              <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--cyan)">2,000만+</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:3px">BF6 누적 판매<br>(2025년말 · T1)</div>
+            </div>
+            <div style="background:var(--bg-elevated);border-radius:6px;padding:10px;text-align:center;border:1px solid rgba(255,209,102,0.15)">
+              <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--gold)">≈ <span data-usd-b="0.765" data-fmt="jo"></span></div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:3px">ARC($252M)+BF6($513M)<br>합산 추정 (ST+EA T2)</div>
+            </div>
+            <div style="background:var(--bg-elevated);border-radius:6px;padding:10px;text-align:center;border:1px solid rgba(255,59,92,0.15)">
+              <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--red)">91%</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:3px">ARC Raiders 리텐션<br>vs BF6 -85% 이탈</div>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>구분</th><th>내용</th><th>Project S 교훈</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="color:var(--green);font-weight:600">시장 반전 규모</td>
+                <td>PC Shooter 카테고리 2025 연간 -5% YoY였으나, Q4(10~12월) ARC Raiders·BF6·Delta Force 동시 출시로 분기 역대 최대 신규 매출 유입. PC 전체 +10.4% 달성에 Q4 Shooter 급반등이 핵심 기여</td>
+                <td style="color:var(--text-muted);font-size:11px">Q4 집중 출시 효과 확인 — 단, 2026 Q4 경쟁 타이틀 다시 증가 예상</td>
+              </tr>
+              <tr>
+                <td style="color:var(--cyan);font-weight:600">ARC Raiders 성공 공식</td>
+                <td>① $40 AA가격 (AAA 절반) ② PvPvE 서브장르 차별화 ③ 월간 콘텐츠 업데이트 ④ 공정 배틀패스 (P2W 없음) ⑤ Steam 최적화 우선 — 2.5배 성공 예상치 초과 (Nexon CEO 발언)</td>
+                <td style="color:var(--text-muted);font-size:11px">서브장르 차별화 + $40 가격대 + 공정 수익화 = Project S 검토 필요</td>
+              </tr>
+              <tr>
+                <td style="color:var(--gold);font-weight:600">리텐션 격차</td>
+                <td>ARC Raiders 출시 15주 후 리텐션 91% vs Battlefield 6 -85% 이탈. 월간 업데이트 + 리텐션 중심 설계 차이. ARC: 평균 CCU 20~45만 유지, BF6: 5만으로 급락</td>
+                <td style="color:var(--text-muted);font-size:11px">런치 품질보다 LiveOps 로드맵이 장기 수익 결정 — SNF 전후 설계 필수</td>
+              </tr>
+              <tr>
+                <td style="color:var(--purple);font-weight:600">AI 리스크</td>
+                <td>ARC Raiders, NPC 음성에 Gen AI TTS 사용 → 비판 지속. 그러나 판매는 무영향. SAG-AFTRA 반발, Eurogamer 2/5 평가에도 14M 판매 달성. Gen AI 인식 52% 부정(GDC 2026) 속에서도 게임 성공 가능</td>
+                <td style="color:var(--text-muted);font-size:11px">AI 적용 시 투명성 선언 + 마케팅 분리 전략 권고</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:10px;padding:8px 12px;background:rgba(0,255,157,0.05);border-left:3px solid var(--green);border-radius:0 4px 4px 0;font-size:11px;color:var(--text-secondary)">
+            🔍 <strong style="color:var(--green)">크로스체크 검증</strong> — ARC Raiders 14M 판매(Nexon IR T1) · BF6 20M+(EA 공식 T1) · Steam #1 10주(SteamDB T1) · 합산 매출 추정 ~$765M(ST $252M + Alinea $130M Steam + 타 플랫폼 T2) · Newzoo: "BF6·ARC Raiders 순위는 연말 출시로 과소 집계 가능성"(T1)
+          </div>
+        </div>
+      </div>
+</div>
+
+<!-- ═══════════════ V6: VALIDATION ═══════════════ -->
+<div id="v6" class="view">
+  <div class="section-title">🔬 정합성 Validation Engine</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+    <div class="card" style="padding:16px;text-align:center"><div style="font-size:32px">✅</div><div style="font-family:var(--font-display);font-size:22px;color:var(--green)">15</div><div style="font-size:11px;color:var(--text-muted)">PASS</div></div>
+    <div class="card" style="padding:16px;text-align:center"><div style="font-size:32px">⚠️</div><div style="font-family:var(--font-display);font-size:22px;color:var(--gold)">4</div><div style="font-size:11px;color:var(--text-muted)">WARN</div></div>
+    <div class="card" style="padding:16px;text-align:center"><div style="font-size:32px">❌</div><div style="font-family:var(--font-display);font-size:22px;color:var(--red)">0</div><div style="font-size:11px;color:var(--text-muted)">FAIL</div></div>
+  </div>
+  <div class="card card--accent" style="margin-bottom:16px">
+    <div class="card-header"><div class="card-title">마스터 수치 레지스트리 (TABLE 9-M-A, 2025<abbr title="Actual — 실적 확정치 (공식 집계 완료)">A</abbr> 기준)</div></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>지표 ID</th><th>지표명</th><th>채택값</th><th>소스</th><th>Tier</th><th>대체값</th><th>대체 소스</th><th>판정</th></tr></thead>
+        <tbody id="validationTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">자동 산술 검증 룰셋 (R001~R006)</div></div>
+    <div id="validationRules"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ V7: INTELLIGENCE ═══════════════ -->
+<div id="v7" class="view">
+  <div class="section-title">🔥 인사이트 Intelligence</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">📅 최근 3개월 이내 주요 인사이트</span>
+  </div>
+  <div class="outcome-tabs" id="outcomeFilterTabs">
+    <button class="outcome-tab active-all" onclick="setOutcomeFilter(this,'all')">● 전체</button>
+    <button class="outcome-tab" onclick="setOutcomeFilter(this,'success')">✅ 성공 인사이트</button>
+    <button class="outcome-tab" onclick="setOutcomeFilter(this,'failure')">❌ 실패 인사이트</button>
+    <button class="outcome-tab" onclick="setOutcomeFilter(this,'mixed')">⚡ 복합 시그널</button>
+  </div>
+  <div class="outcome-dist" id="insightDistBar"></div>
+  <input class="search-box" placeholder="🔍 키워드 검색 (FPS, PC, 모바일, 한국...)" id="insightSearch" oninput="renderInsights()">
+  <div class="insight-grid" id="insightContainer"></div>
+
+</div>
+
+<!-- ═══════════════ V8: RISK ═══════════════ -->
+<div id="v8" class="view">
+  <div class="section-title">🚨 산업 리스크 모니터링</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <span style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">📅 2026-03-17 기준 | 소스: GDC 2026 · Newzoo · Sensor Tower · Niko Partners</span>
+  </div>
+  <div class="outcome-tabs" id="riskFilterTabs">
+    <button class="outcome-tab active-all" onclick="setRiskFilter(this,'all')">● 전체</button>
+    <button class="outcome-tab" style="background:rgba(255,59,92,0.07);border-color:rgba(255,59,92,0.3);color:#FF3B5C" onclick="setRiskFilter(this,'high')">🔴 높음</button>
+    <button class="outcome-tab" style="background:rgba(255,140,66,0.07);border-color:rgba(255,140,66,0.3);color:#FF8C42" onclick="setRiskFilter(this,'mid')">🟠 중간</button>
+    <button class="outcome-tab" style="background:rgba(255,209,102,0.07);border-color:rgba(255,209,102,0.3);color:#FFD166" onclick="setRiskFilter(this,'low')">🟡 낮음</button>
+  </div>
+  <div class="outcome-dist" id="riskDistBar"></div>
+  <div id="riskCardContainer" class="insight-grid"></div>
+</div>
+
+<!-- ═══════════════ V9: SOURCES ═══════════════ -->
+<div id="v9" class="view">
+  <div class="section-title">📡 출처 Sources</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+    <div style="background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.2);border-radius:6px;padding:10px;text-align:center"><div style="font-size:22px;color:var(--green)">🟢 4</div><div style="font-size:11px;color:var(--text-muted)">최신</div></div>
+    <div style="background:rgba(255,209,102,0.06);border:1px solid rgba(255,209,102,0.2);border-radius:6px;padding:10px;text-align:center"><div style="font-size:22px;color:var(--gold)">🟡 2</div><div style="font-size:11px;color:var(--text-muted)">갱신 대기</div></div>
+    <div style="background:rgba(255,59,92,0.06);border:1px solid rgba(255,59,92,0.2);border-radius:6px;padding:10px;text-align:center"><div style="font-size:22px;color:var(--red)">🔴 0</div><div style="font-size:11px;color:var(--text-muted)">미확인</div></div>
+  </div>
+  <div class="source-grid" id="sourceGrid"></div>
+  <div class="spacer-16"></div>
+  <div class="card card--accent">
+    <div class="card-header"><div class="card-title">소스별 집계 범위 다이어그램</div></div>
+    <div class="card-body">
+      <div class="source-scope-diagram">
+        <div style="border:1px solid rgba(255,209,102,0.3);border-radius:8px;padding:16px;margin-bottom:4px">
+          <div style="color:var(--gold);font-weight:700;margin-bottom:8px">광의 시장 (<abbr title="Software — 게임 소프트웨어">SW</abbr> + <abbr title="Hardware — 게임 하드웨어">HW</abbr> + 광고 + 구독)</div>
+          <div style="color:var(--text-secondary)">BCG <span data-usd-b="263" data-fmt="jo"></span> &nbsp;|&nbsp; Bain ~<span data-usd-b="260" data-fmt="jo"></span></div>
+          <div style="border:1px solid rgba(0,212,255,0.3);border-radius:6px;padding:12px;margin-top:10px">
+            <div style="color:var(--cyan);font-weight:700;margin-bottom:6px">소프트웨어 기준 — Newzoo <span data-usd-b="197" data-fmt="jo"></span></div>
+            <div style="color:var(--text-secondary)">Mobile <span data-usd-b="108" data-fmt="jo"></span> &nbsp;|&nbsp; PC <span data-usd-b="43" data-fmt="jo"></span> &nbsp;|&nbsp; Console <span data-usd-b="45.3" data-fmt="jo"></span></div>
+            <div style="border:1px solid rgba(0,255,157,0.2);border-radius:4px;padding:10px;margin-top:8px">
+              <div style="color:var(--green);font-weight:700;margin-bottom:4px">앱스토어 직접 집계 — Sensor Tower</div>
+              <div style="color:var(--text-secondary)">게임 IAP <span data-usd-b="81.75" data-fmt="jo"></span> + 비게임 IAP <span data-usd-b="85.25" data-fmt="jo"></span> = 전체 앱 IAP <span data-usd-b="167" data-fmt="jo"></span></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--red);margin-top:8px">⚠️ 세 기관의 수치는 집계 범위가 달라 직접 비교 불가</div>
+      </div>
+    </div>
+  </div>
+  <div class="spacer-16"></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">📋 전체 리포트 링크 디렉토리</div></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:8px">Newzoo</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· Global Games Market Report 2025 (Free PDF) ↗</a>
+            <a href="https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· PC&Console Gaming Report 2026 (Feb 2026) ↗</a>
+            <a href="https://wccftech.com/newzoo-expects-global-video-games-market-reach-197-billion-2025-exceeds-expectations/" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· 2025 $197B 확정 보도 (Dec 2025) ↗</a>
+          </div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--cyan);margin:12px 0 8px">Sensor Tower</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="https://sensortower.com/report/state-of-gaming-2026" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· State of Gaming 2026 ↗</a>
+            <a href="https://sensortower.com/report/state-of-mobile-2026" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· State of Mobile 2026 ↗</a>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:8px">BCG</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="https://www.bcg.com/publications/2025/video-gaming-report-2026-next-era-of-growth" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· Video Gaming Report 2026 (Dec 2025) ↗</a>
+            <a href="https://investgame.net/news/pdf/2025-12-11-2025-12-11-bcg_video-gaming-report_2026-26-pgs-6/" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· BCG Report 전체 PDF ↗</a>
+          </div>
+          <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--cyan);margin:12px 0 8px">Niko Partners</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="https://nikopartners.com/asia-mena-market-model-2025-half-year-update/" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· Asia&MENA Half-Year Update 2025 ↗</a>
+            <a href="https://nikopartners.com/east-asia-games-market-in-2025-navigating-the-changes/" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· East Asia Market 2025 ↗</a>
+            <a href="https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026" target="_blank" style="font-family:var(--font-data);font-size:10px;color:var(--text-secondary);text-decoration:none">· 2026 10대 트렌드 (Substack) ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ─── RIGHT SIDEBAR ─── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">🔥 LIVE INTEL</div>
+    <div class="sidebar-ts">2026-03-17 KST</div>
+  </div>
+  <div class="sidebar-cat-tabs">
+    <button class="sidebar-tab active" onclick="setSidebarCat(this,'all')">전체</button>
+    <button class="sidebar-tab" onclick="setSidebarCat(this,'pc')">PC</button>
+    <button class="sidebar-tab" onclick="setSidebarCat(this,'mobile')">모바일</button>
+    <button class="sidebar-tab" onclick="setSidebarCat(this,'genre')">장르</button>
+    <button class="sidebar-tab" onclick="setSidebarCat(this,'region')">지역</button>
+  </div>
+  <div id="sidebarInsights"></div>
+  <div class="sidebar-dist" id="sidebarDist"></div>
+  <div style="margin-top:12px">
+    <span class="sidebar-risks-label">🚨 리스크</span>
+    <div class="sidebar-risk-chip"><span style="color:var(--red)">🔴</span> R01 레이아웃 지속</div>
+    <div class="sidebar-risk-chip"><span style="color:var(--red)">🔴</span> R02 Gen AI 부정 52%</div>
+    <div class="sidebar-risk-chip"><span style="color:var(--orange)">🟠</span> R03 미국 관세</div>
+    <div class="sidebar-risk-chip"><span style="color:var(--gold)">🟡</span> R06 FPS 역성장</div>
+  </div>
+  <button class="filter-btn" style="width:100%;margin-top:12px;text-align:center" onclick="showView('v7')">전체 인사이트 보기 →</button>
+</aside>
+
+<!-- ─── STATUS BAR ─── -->
+<div class="statusbar">
+  <div class="statusbar-checks">
+    <span style="color:var(--green)">✅ 15 PASS</span>
+    <span style="color:var(--gold)">⚠️ 4 WARN</span>
+    <span style="color:var(--red)">❌ 0 FAIL</span>
+    <span>|</span>
+    <span>최종 검증: 2026-03-17 15:42 KST</span>
+  </div>
+  <div>기반 데이터: gamemarketdashboardresearch.md v1.2 | 주요 소스: Newzoo, Sensor Tower, BCG, Niko Partners</div>
+  <div class="statusbar-version">GMI v1.2</div>
+</div>
+
+</div><!-- /app-shell -->
+
+<script>
+// ════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════
+
+const YEARS = [2022, 2023, 2024, '2025A', '2026F', '2027F', '2028F'];
+const YEARS_ACTUAL = [2022, 2023, 2024, '2025A'];
+const YEARS_FORECAST = ['2026F', '2027F', '2028F'];
+
+const DATA = {
+  global: {
+    total:   [173.8, 176.8, 182.5, 197.0, 196.1, 201.6, 215],
+    mobile:  [95.6,  95.5,  100.4, 108.0, 105.9, 106.8, 115],
+    pc:      [34.8,  37.1,  38.3,  43.0,  45.8,  48.9,  52.1],
+    console: [43.5,  44.2,  43.8,  45.3,  48.5,  50.5,  51.6],
+    bcg:     [236,   247,   254,   263,   281,   299,   319],
+  },
+  pcConsole: {
+    years: [2015, 2018, 2019, 2020, 2021, 2022, 2023, 2024, '2025A', '2026F', '2027F', '2028F'],
+    total: [55.9, 69.6, 67.6, 80.9, 81.7, 78.6, 81.9, 82.4, 88.3, 94.3, 99.4, 103.7],
+  },
+  pcVsConsole: {
+    pc:      [37.3, 38.6, 37.3, 43.0, 45.8, 48.9, 52.1],
+    console: [41.3, 43.3, 42.8, 45.3, 48.5, 50.5, 51.6],
+  },
+  players: {
+    total:   [3.22, 3.28, 3.43, 3.578, 3.72, 3.86, 4.0],
+    mobile:  [2.724, 2.755, 2.857, 2.985, 3.115, 3.228, 3.320],
+    pc:      [0.879, 0.878, 0.908, 0.936, 0.966, 0.994, 1.020],
+    console: [0.587, 0.617, 0.629, 0.645, 0.662, 0.677, 0.688],
+  },
+  region: {
+    labels: ['APAC', 'NA', 'EU', 'LatAm', 'MEA'],
+    values: [87.6, 52.7, 33.1, 8.3, 7.1],
+    yoy:    [2.3, 4.2, 3.6, 6.4, 7.5],
+    colors: ['#00D4FF','#00FF9D','#FFD166','#FF8C42','#BD93F9'],
+  },
+  mobileGenre: {
+    labels: ['Strategy(4X)', 'Puzzle', 'RPG', 'Casual', 'Shooter', 'Action', 'Sports'],
+    values: [20.2, 14.4, 13.8, 10.2, 8.7, 6.5, 4.2],
+    colors: ['#00FF9D','#00D4FF','#FF3B5C','#FFD166','#FF8C42','#BD93F9','#5A7A96'],
+  },
+  pcGenre: {
+    labels: ['Shooter', 'Strategy', 'RPG', 'Action', 'Sports', 'Simulation'],
+    values: [9.0, 8.2, 7.1, 6.8, 4.5, 3.9],
+    colors: ['#FF3B5C','#00D4FF','#BD93F9','#FF8C42','#00FF9D','#FFD166'],
+  },
+  consoleGenre: {
+    labels: ['Sports', 'Action', 'Shooter', 'RPG', 'Racing', 'Adventure'],
+    values: [10.6, 9.8, 8.5, 7.2, 4.1, 3.6],
+    colors: ['#00FF9D','#00D4FF','#FF8C42','#BD93F9','#FFD166','#FF3B5C'],
+  },
+  bcgBM: {
+    labels: ['IAP', 'Game Transactional', 'Advertising', 'Console Hardware', 'Subscription', 'Streaming'],
+    values: [128.7, 69.6, 31.9, 18.3, 13.7, 0.6],
+    colors: ['#00D4FF','#00FF9D','#FFD166','#FF3B5C','#BD93F9','#FF8C42'],
+  },
+};
+
+const VALIDATION_DATA = [
+  { id:'R-TOT-25', name:'글로벌 총 매출 (2025)', val:'$197.0B', src:'Newzoo Dec2025', tier:'T1', alt:'$263B', altSrc:'BCG(광의)', status:'pass', note:'집계 범위 차이' },
+  { id:'R-MOB-25', name:'모바일 매출 (2025)', val:'$108.0B', src:'Newzoo Dec2025', tier:'T1', alt:'$82B / $81.75B', altSrc:'ST(IAP)', status:'pass', note:'집계 범위 차이' },
+  { id:'R-PC-25', name:'PC 매출 (2025)', val:'$43.0B', src:'Newzoo Dec2025', tier:'T1', alt:'$43B', altSrc:'PC Gamer/NZ', status:'pass', note:'일치' },
+  { id:'R-CON-25', name:'Console 매출 (2025)', val:'$45.3B', src:'Newzoo Feb2026', tier:'T1', alt:'$45.0B', altSrc:'Newzoo Dec2025', status:'pass', note:'Feb2026 정밀값 $45.3B 채택, Dec 반올림 $45.0B 대체값' },
+  { id:'R-PC-CON-25', name:'PC+Console 합산 (2025)', val:'$88.3B', src:'Newzoo Feb2026', tier:'T1', alt:'$88.0B', altSrc:'산술', status:'pass', note:'0% 산술 검증 ✅' },
+  { id:'P-TOT-25', name:'총 플레이어 (2025, Unique)', val:'3.578B', src:'Newzoo Sep2025', tier:'T1', alt:'3.6B', altSrc:'NZ(반올림)', status:'pass', note:'0.6% 반올림 차이' },
+  { id:'P-MOB-25', name:'모바일 플레이어 (2025)', val:'2.985B', src:'Newzoo Sep2025', tier:'T1', alt:'3B', altSrc:'NZ(반올림)', status:'pass', note:'0.5% 반올림 차이' },
+  { id:'P-PAY-25', name:'유료 플레이어 (2025)', val:'1.6B', src:'Newzoo Sep2025', tier:'T1', alt:'—', altSrc:'—', status:'pass', note:'—' },
+  { id:'P-ARPU-25', name:'Payer ARPU (2025)', val:'$119.7', src:'Newzoo Sep2025', tier:'T1', alt:'$123.1', altSrc:'산술 역산', status:'warn', note:'⚠️ +2.8% 방법론 차이' },
+  { id:'RG-APAC-25', name:'APAC 매출 (2025)', val:'$87.6B', src:'Newzoo Sep2025', tier:'T1', alt:'$88.97B', altSrc:'Niko Nov2025', status:'pass', note:'1.6% 범위 차이' },
+  { id:'DL-MOB-25', name:'모바일 게임 다운로드 (2025)', val:'50.41B', src:'ST SoM2026', tier:'T1', alt:'50B', altSrc:'ST SoG2026', status:'pass', note:'0.8% 반올림' },
+  { id:'G-PCShooter-25', name:'PC Shooter 매출 (2025)', val:'$9.0B', src:'Newzoo Sep2025', tier:'T1', alt:'—', altSrc:'—', status:'pass', note:'단일 소스 T1' },
+  { id:'G-MobStrategy-25', name:'모바일 Strategy 매출', val:'$20.2B', src:'ST SoG2026', tier:'T1', alt:'$17.5B', altSrc:'Quantumrun', status:'warn', note:'⚠️ -13% 분류 기준 차이' },
+  { id:'ST-IAP-TOT-25', name:'ST 전체 앱 IAP (2025)', val:'$167B', src:'ST SoM2026', tier:'T1', alt:'—', altSrc:'—', status:'pass', note:'—' },
+  { id:'2025-YOY', name:'2025 총계 YoY', val:'+7.5%', src:'Newzoo Dec2025', tier:'T1', alt:'+7.95%', altSrc:'산술 ($182.5B 기준)', status:'warn', note:'⚠️ ±0.45%p 기준년 차이' },
+  { id:'2025-SHARE', name:'2025 쉐어 합계', val:'100%', src:'산술 검증', tier:'T1', alt:'—', altSrc:'—', status:'warn', note:'⚠️ 반올림으로 PC22+MOB55+CON23=100%' },
+  { id:'2026F-TOTAL', name:'2026F 총계 vs 구성', val:'$196.1B', src:'NZ Sep2025', tier:'T3', alt:'$200.2B', altSrc:'est합산', status:'warn', note:'⚠️ 2.1% 미세 불일치' },
+  { id:'PC-CAGR-28', name:'PC CAGR 2025-2028', val:'6.6%', src:'Newzoo Feb2026', tier:'T1', alt:'6.6%', altSrc:'산술 검증', status:'pass', note:'✅ 0% 일치' },
+];
+
+const VALIDATION_RULES = [
+  { id:'R001', name:'플랫폼 플레이어 합산 ≤ 총계 × 1.35', calc:'4.566B ≤ 3.578B × 1.35 = 4.830B', status:'pass' },
+  { id:'R002', name:'PC+Console 합산 ↔ 공식값 ±1%', calc:'$43.0B + $45.3B = $88.3B ↔ 공식 $88.3B (0%)', status:'pass' },
+  { id:'R003', name:'지역 합산 = 글로벌 총계 ±2%', calc:'APAC+NA+EU+LatAm+MEA = $188.8B ↔ $188.8B (0%)', status:'pass' },
+  { id:'R004', name:'플랫폼 매출 순서 (모바일 > PC 소폭, 콘솔 우위)', calc:'Mobile $108B > Console $45.3B > PC $43.0B', status:'pass' },
+  { id:'R005', name:'YoY 산술 검증 ±0.5%p', calc:'($197B-$182.5B)/$182.5B = +7.95% ↔ 발표 +7.5% (±0.45%p)', status:'warn' },
+  { id:'R006', name:'est vs 실적 괴리 경고 ±15%', calc:'2025A $197B vs 2024 예측 $194B (1.5% 차이)', status:'pass' },
+];
+
+const SOURCES = [
+  { name:'Newzoo', status:'current', credibility:5, scope:'소프트웨어 기준 (HW·광고 제외)', latest:'PC&Console Report 2026 (Feb 2026)', next:'Q2 2026 Quarterly Update', reports:[
+    { name:'Global Games Market Report 2025', date:'Sep 2025', url:'https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf'},
+    { name:'PC&Console Gaming Report 2026', date:'Feb 2026', url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/'},
+    { name:'2025 $197B 확정', date:'Dec 2025', url:'https://wccftech.com/newzoo-expects-global-video-games-market-reach-197-billion-2025-exceeds-expectations/'},
+  ]},
+  { name:'Sensor Tower', status:'current', credibility:5, scope:'앱스토어 IAP 직접 집계 (게임+비게임)', latest:'State of Gaming 2026 (Feb 2026)', next:'State of Mobile 2026', reports:[
+    { name:'State of Gaming 2026', date:'Feb 2026', url:'https://sensortower.com/report/state-of-gaming-2026'},
+    { name:'State of Mobile 2026', date:'Jan 2026', url:'https://sensortower.com/report/state-of-mobile-2026'},
+  ]},
+  { name:'BCG', status:'current', credibility:5, scope:'광의 (SW+HW+광고+구독+스트리밍)', latest:'Video Gaming Report 2026 (Dec 2025)', next:'2027 리포트 (2026년말)', reports:[
+    { name:'Video Gaming Report 2026', date:'Dec 2025', url:'https://www.bcg.com/publications/2025/video-gaming-report-2026-next-era-of-growth'},
+  ]},
+  { name:'Niko Partners', status:'pending', credibility:5, scope:'아시아·MENA 전문', latest:'Half-Year Update Nov 2025', next:'2026 Market Model (May 2026)', reports:[
+    { name:'Asia&MENA Half-Year Update 2025', date:'Nov 2025', url:'https://nikopartners.com/asia-mena-market-model-2025-half-year-update/'},
+    { name:'East Asia Market 2025', date:'2025', url:'https://nikopartners.com/east-asia-games-market-in-2025-navigating-the-changes/'},
+    { name:'2026 10대 트렌드', date:'Jan 2026', url:'https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026'},
+  ]},
+  { name:'GDC', status:'current', credibility:4, scope:'개발자 설문 기반 산업 현황', latest:'State of Game Industry 2026 (Jan 2026)', next:'GDC 2027', reports:[
+    { name:'State of Game Industry 2026', date:'Jan 2026', url:'https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/'},
+  ]},
+  { name:'Bain & Company', status:'pending', credibility:4, scope:'광의 게임 시장 전략 분석', latest:'Annual Gaming Report 2025', next:'Annual 2026 (2026년말)', reports:[]},
+];
+
+const INSIGHTS = [
+  { id:'HOT_001', period:'hot', date:'2026-03-12', outcome:'success', title:'Newzoo PC&Console Gaming Report 2026 발표', summary:'PC+Console $88.3B (+7.2%). 2028년 PC가 Console 매출 추월 공식화. PC CAGR 6.6% vs Console 4.4%. PC 2028년 10억 플레이어 예상.', lesson:'PC 에코시스템 재성장 확인. 고품질 프리미엄 전략 유효.', cats:['🖥️ PC', '📊 전체'], source:'Newzoo', credibility:5, url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/', fps:false },
+  { id:'HOT_002', period:'hot', date:'2026-03-16', outcome:'success', title:'Steam 저가 $30 미만 신작 +156% 성장 확인', summary:'가격 $30 미만 신작 1년간 +156% 성장. 26개 타이틀 $5M+ 달성. 저가 진입 전략의 구체적 성과 수치 검증.', lesson:'가격 전략 수치 검증. $30↓ 진입 + DLC 수익화 유효한 Steam 전략.', cats:['🖥️ PC', '💰 가격'], source:'Newzoo', credibility:5, url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/', fps:true },
+  { id:'HOT_003', period:'hot', date:'2026-03-15', outcome:'success', title:'GDC 2026 — Steam Deck 4위 플랫폼 등극', summary:'개발자 중요 플랫폼 4위: PC > Console > Mobile > Steam Deck. 28% 개발자 Steam Deck 최적화 중.', lesson:'PC 생태계 확장. UE5 기반 Steam Deck 최적화 우선순위 검토 필요.', cats:['🖥️ PC', '🏭 산업'], source:'GDC 2026', credibility:5, url:'https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/', fps:true },
+  { id:'HOT_004', period:'hot', date:'2026-03-15', outcome:'failure', title:'PC 프리미엄 +17.4% 강세, F2P -1.1% 역성장 확정', summary:'PC 프리미엄 모델 +17.4%로 강세 전환. F2P 수익 -1.1%로 역성장 첫 확인. F2P 남발 전략 공식 종료 신호.', lesson:'F2P 모델 포화 시작. 프리미엄 + DLC 혼합 모델로 전환 시점.', cats:['🖥️ PC', '💰 BM'], source:'Newzoo', credibility:5, url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/', fps:false },
+  { id:'HOT_005', period:'hot', date:'2026-03-15', outcome:'success', title:'아시아·MENA 모바일 +3.8% 성장 전망 유지', summary:'2026년 아시아·MENA 모바일 +3.8% 성장 전망 유지. 서방 모바일 1~2% 대비 구조적 우위.', lesson:'아시아 시장 구조적 성장 지속. 서방과 아시아 모바일 시장 차별화 전략 필요.', cats:['🌏 지역', '📱 모바일'], source:'Niko Partners', credibility:5, url:'https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026', fps:false },
+  { id:'HOT_006', period:'hot', date:'2026-01', outcome:'mixed', title:'Shooter 중국 스트리밍 1위 (2026.01)', summary:'2026년 1월 중국 라이브스트리밍 1위: Shooter 장르. Delta Force·Honor of Kings 주도. 아시아 기회 vs 글로벌 역성장 공존.', lesson:'아시아 선점 후 글로벌 확장 유효. 글로벌 PC Shooter 역성장과 아시아 성장의 이원화 구조.', cats:['🎯 장르', '🌏 아시아'], source:'Niko Partners', credibility:5, url:'https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026', fps:true },
+  { id:'INS_1M_001', period:'1m', date:'2026-02', outcome:'success', title:'2025 PC 매출 서프라이즈 $43B 확정', summary:'2025 PC 매출 $43B. 초기 예측 $39.9B 대비 +$3.1B (+7.8%p) 초과. 구조적 성장 국면 진입 확인.', lesson:'Newzoo 초기 예측은 PC 과소 추정 경향. 연말 확정치 상향 패턴 반복.', cats:['🖥️ PC'], source:'Newzoo', credibility:5, url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/', fps:false },
+  { id:'INS_1M_002', period:'1m', date:'2025-12', outcome:'failure', title:'PC Shooter 총 매출 역성장 확정 (-5% YoY)', summary:'PC Shooter 카테고리 $9.0B (-5% YoY). MAU 상위 5개 타이틀 독점 구조화. 신규 진입 시 플레이어 희석 구조.', lesson:'장르 1위라도 성장 보장 없음. 서브장르 차별화·아시아 선점 필수.', cats:['🎯 장르', '🖥️ PC'], source:'Newzoo', credibility:5, url:'https://gam3s.gg/news/newzoo-2025-game-market-report/', fps:true },
+  { id:'INS_1M_003', period:'1m', date:'2025-12', outcome:'success', title:'4X Strategy 모바일 독주 확인 ($20.2B)', summary:'모바일 Strategy 장르 $20.2B. 매출·다운로드·플레이타임 3개 지표 동시 성장. 유일한 성장 장르.', lesson:'장르 집중 + 글로벌 IP 전략 = 지속가능 모바일 성장 패턴. Last War·Whiteout Survival 벤치마크.', cats:['🎯 장르', '📱 모바일'], source:'Sensor Tower', credibility:5, url:'https://sensortower.com/report/state-of-gaming-2026', fps:false },
+  { id:'INS_1M_004', period:'1m', date:'2025-12', outcome:'failure', title:'모바일 RPG -14.7% 급락 — 한국 주력 장르 타격', summary:'모바일 RPG $13.8B (-14.7% YoY). 한국 주력 개발 장르의 글로벌 쇠퇴 명확. 국내 개발사 전략 전환 압박.', lesson:'한국 RPG 의존 구조 위기. 글로벌 트렌드와 괴리 심화. 장르 다양화 또는 차별화 필수.', cats:['🎯 장르', '📱 모바일'], source:'Sensor Tower', credibility:5, url:'https://sensortower.com/report/state-of-gaming-2026', fps:false },
+  { id:'INS_1M_005', period:'1m', date:'2025-12', outcome:'mixed', title:'모바일 $108B 성장 ↔ 다운로드 -7.2% 이중 신호', summary:'IAP 수익 +7.7% 성장이나 다운로드 -7.2% 역성장. 성숙기 전환 확인. 설치 감소 = 신규 유입 감소.', lesson:'모바일 설치 극대화 전략 종료. LiveOps·웹스토어·IP 파트너십으로 전환 필수.', cats:['📱 모바일', '📊 전체'], source:'NZ+ST', credibility:5, url:'https://sensortower.com/report/state-of-gaming-2026', fps:false },
+  { id:'INS_1M_006', period:'1m', date:'2026-01', outcome:'success', title:'MEA 전 지역 최고 성장률 +7.5%', summary:'중동·아프리카 게임 시장 +7.5% YoY. 5대 지역 중 최고 성장. 사우디아라비아 정부 게임 투자 구조적 뒷받침.', lesson:'신흥 시장 구조적 성장 확인. MEA 진출 시 사우디·UAE 중심 전략 유효.', cats:['🌏 지역'], source:'Newzoo', credibility:5, url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/', fps:false },
+  { id:'INS_3M_001', period:'3m', date:'2025-12', outcome:'success', title:'R.E.P.O.·PEAK — 인디 Co-op 2·3위 달성', summary:'AAA 제친 저가·소셜 Co-op 포맷 확인. R.E.P.O. 2위, PEAK 3위. 크리에이터 친화 설계의 재현 가능한 패턴.', lesson:'Co-op + 저가 + 크리에이터 친화 = 2025년 검증된 성공 공식. FPS에 소셜 레이어 설계 필요.', cats:['🖥️ PC', '🎯 장르'], source:'Sensor Tower', credibility:5, url:'https://sensortower.com/report/state-of-gaming-2026', fps:true },
+  { id:'INS_3M_002', period:'3m', date:'2025-12', outcome:'failure', title:'설치 극대화 전략 공식 종료', summary:'모바일 게임 다운로드 -5.7% (App Store) -7.3% (Google Play). 2년 연속 역성장. 설치 중심 마케팅 ROI 구조적 악화.', lesson:'신규 설치 대신 기존 유저 수익화·LTV 극대화 전략으로 전환 필수.', cats:['📱 모바일'], source:'Sensor Tower', credibility:5, url:'https://sensortower.com/report/state-of-gaming-2026', fps:false },
+  { id:'INS_6M_001', period:'6m', date:'2025-10', outcome:'success', title:'Steam 3년 연속 ATH 달성 (역대 최고 기록)', summary:'2025년 Steam 유닛 판매·매출·출시작 수 동시 역대 최고 기록. F2P 신작보다 프리미엄 소규모 타이틀 비중 증가.', lesson:'Steam 생태계 건강성 확인. 고품질 소규모 프리미엄 타이틀의 성공 공간 존재.', cats:['🖥️ PC'], source:'Steam/Newzoo', credibility:5, url:'https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf', fps:false },
+  { id:'INS_6M_002', period:'6m', date:'2025-09', outcome:'success', title:'2~5월 론칭 +34% 플레이어 우위 (4년 확인)', summary:'2021-2024 4년간 반복 통계: 2~5월 론칭 타이틀이 하반기 대비 +34% 플레이어 확보. GTA VI 2026 충돌 완화.', lesson:'Q1 2027 론칭 타이밍 데이터 뒷받침. 경쟁 타이틀 리스크 분산 효과.', cats:['🖥️ PC', '📊 전체'], source:'Newzoo', credibility:5, url:'https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf', fps:true },
+  { id:'INS_6M_003', period:'6m', date:'2025-09', outcome:'mixed', title:'LiveOps 매출 20~25% 기여 vs 미구현 -60%', summary:'LiveOps 운영 타이틀은 매출 20~25% 추가 기여. 미구현 타이틀은 4~8주 이후 이탈률 -60% 이상.', lesson:'런치 전 LiveOps 로드맵 설계 필수. 이탈 방어 없이 초기 마케팅 투자 낭비.', cats:['🖥️ PC', '💰 BM'], source:'Newzoo', credibility:5, url:'https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf', fps:true },
+];
+
+const RISKS = [
+  { id:'R01', title:'레이아웃 지속', severity:'high', data:'28% 응답자 최근 2년 내 경험. 학생 74% 취업 불안', source:'GDC 2026', url:'https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/' },
+  { id:'R02', title:'Gen AI 부정 인식 급등', severity:'high', data:'52% 부정(전년 30%, 전전년 18%). 긍정 7%로 급감', source:'GDC 2026', url:'https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/' },
+  { id:'R03', title:'미국 관세 — 하드웨어 압박', severity:'mid', data:'38% 업계 리더 영향. Switch 2 가격 인상 가능성', source:'GDC + PC Gamer', url:'https://www.pcgamer.com/gaming-industry/pc-games-revenue-will-outgrow-consoles-by-2028-analyst-predicts/' },
+  { id:'R04', title:'시장 집중도 심화', severity:'mid', data:'플레이타임 95%+가 Top 50 내. 신작 발견 가능성 감소', source:'Newzoo', url:'https://investgame.net/news/pdf/2026-03-12-newzoo_2026_pc_and_console_gaming_report_wp/' },
+  { id:'R05', title:'모바일 다운로드 지속 감소', severity:'low', data:'App Store -5.7%, Google Play -7.3% (2025)', source:'Sensor Tower', url:'https://sensortower.com/report/state-of-gaming-2026' },
+  { id:'R06', title:'PC Shooter 역성장 구조화', severity:'low', data:'$9B (-5% YoY). 상위 5개 타이틀 MAU 독점', source:'Newzoo', url:'https://gam3s.gg/news/newzoo-2025-game-market-report/' },
+  { id:'R07', title:'에버그린 게임의 AA 압박', severity:'low', data:'Fortnite·Roblox·CoD가 신규 라이브서비스 진입 차단', source:'Niko Partners', url:'https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026' },
+];
+
+const ARCHIVE_DATA = [
+  { id:'ARC_001', date:'2026-02-25', outcome:'mixed', title:'Sensor Tower State of Gaming 2026 발표', summary:'2025 다운로드 52B. 모바일 +1% ($82B). PC+Console +13%. Steam 역대 최다 판매.', lesson:'PC/콘솔 생태계 재성장. 모바일은 수익화 중심 전환 필요.', tags:['#PC_revenue','#mobile_revenue'], batch:'2026-03-17', cats:['📊 전체'], source:'Sensor Tower', credibility:5, url:'https://www.prnewswire.com/news-releases/sensor-tower-state-of-gaming-302696284.html' },
+  { id:'ARC_002', date:'2025-12-18', outcome:'success', title:'Newzoo 2025 최종 집계 $197B 확정', summary:'초기 $188.8B 대비 +$8.2B 상회. PC +10.4%, Mobile +7.7% 동시 서프라이즈.', lesson:'Newzoo 초기 예측은 PC·모바일 구조적 과소 추정. 연말 상향 감안 필요.', tags:['#PC_revenue','#mobile_revenue'], batch:'2026-03-17', cats:['📊 전체','🖥️ PC'], source:'Newzoo', credibility:5, url:'https://wccftech.com/newzoo-expects-global-video-games-market-reach-197-billion-2025-exceeds-expectations/' },
+  { id:'ARC_003', date:'2025-12-09', outcome:'mixed', title:'BCG "Video Game Winter 종료" 선언', summary:'"Video Game Winter 종료". 2030년 $350B, CAGR +6% 전망. 플랫폼 수렴 + UGC 혁명 선언.', lesson:'회복 국면이나 AAA 고비용 구조 지속 불가. AA + 플랫폼 수렴 대응 필수.', tags:['#platform_convergence','#UGC'], batch:'2026-03-17', cats:['📊 전체'], source:'BCG', credibility:5, url:'https://www.bcg.com/publications/2025/video-gaming-report-2026-next-era-of-growth' },
+  { id:'ARC_004', date:'2026-01-29', outcome:'failure', title:'GDC 2026 — Gen AI 부정 인식 52% 급등', summary:'레이아웃 28% 경험. AI 부정 30%→52% (전년比 +22%p). 학생 74% 취업 불안.', lesson:'Gen AI 도입은 개발자 신뢰 확보 없이 강행 불가. 투명성·품질 보증 선행.', tags:['#layoffs','#AI_gamedev'], batch:'2026-03-17', cats:['🏭 산업'], source:'GDC 2026', credibility:5, url:'https://gdconf.com/article/gdc-2026-state-of-the-game-industry-reveals-impact-of-layoffs-generative-ai-and-more/' },
+  { id:'ARC_005', date:'2026-01-21', outcome:'mixed', title:'Niko Partners 2026 10대 트렌드 발표', summary:'여성 게이머 40% 돌파, 모바일 3.8% 성장, Switch 2 관세 인상 가능성, 에버그린 게임의 AA 압박.', lesson:'아시아는 구조적 성장 지속. 에버그린 게임 압박에 차별화 서브장르 선제 대응 필요.', tags:['#asia_market','#korea_market'], batch:'2026-03-17', cats:['🌏 지역'], source:'Niko Partners', credibility:5, url:'https://substack.nikopartners.com/p/10-major-trends-to-watch-in-2026' },
+  { id:'ARC_006', date:'2025-11', outcome:'success', title:'Niko Asia&MENA $88.97B — 예상 상회 확인', summary:'아시아&MENA $88.97B (+2.7%). 한국 모바일 개선. 중국 전 플랫폼 전망 상향. Console 가장 빠른 성장.', lesson:'아시아 시장은 글로벌 성장 견인. 2029년 $100B+ 목표 유지.', tags:['#asia_market','#korea_market'], batch:'2026-03-17', cats:['🌏 지역'], source:'Niko Partners', credibility:5, url:'https://nikopartners.com/asia-mena-market-model-2025-half-year-update/' },
+  { id:'ARC_007', date:'2025-09-09', outcome:'success', title:'Newzoo Global Report 2025 발표 ($188.8B)', summary:'$188.8B 초기 전망. 3.578B 플레이어. Console +5.5% 최고 성장. APAC 46%.', lesson:'2025 성장 트렌드 조기 시그널. 초기 예측 대비 실적 항상 상향 가능성.', tags:['#PC_revenue','#mobile_revenue'], batch:'2026-03-17', cats:['📊 전체'], source:'Newzoo', credibility:5, url:'https://investgame.net/wp-content/uploads/2025/09/2025_Newzoo_Free_Global_Games_Market_Report.pdf' },
+  { id:'ARC_Q3_001', date:'2025-07', outcome:'failure', title:'Newzoo Q1 2025 방법론 개편 — 2024 수치 전면 재조정', summary:'총시장 $184.3B→$177.9B. PC -10%, Console -15% 하향. 소스 확대 방법론 개편.', lesson:'단일 소스 맹신 위험. 방법론 변경 시 전체 시계열 재검토 필수.', tags:['#PC_revenue'], batch:'2025-Q3', cats:['📊 전체','🖥️ PC'], source:'Newzoo', credibility:5, url:'https://gamedevreports.substack.com/p/newzoo-the-gaming-market-in-2024' },
+  { id:'ARC_Q3_002', date:'2025', outcome:'failure', title:'2024 Console 매출 -3.9% 역성장', summary:'콘솔 $42.8B (-3.9%). 게임 판매 -14%. 구독 +14%이나 전체 역성장.', lesson:'전통 패키지 의존 전략 종료. 구독·MTX 전환 속도 높여야.', tags:['#console_revenue'], batch:'2025-Q3', cats:['🎮 콘솔'], source:'Newzoo', credibility:5, url:'https://gamedevreports.substack.com/p/newzoo-pc-and-console-market-in-2025' },
+  { id:'ARC_Q3_003', date:'2024-08', outcome:'success', title:'Black Myth: Wukong — 중국 최초 글로벌 AAA 성공', summary:'출시 3일 1,000만 판매. 중국 개발사 최초 글로벌 PC AAA 성공. 서방 PC 시장 중국 IP 진입 신호탄.', lesson:'문화적 IP + 높은 PC 품질 + 글로벌 배급 = 재현 가능한 성공 패턴.', tags:['#PC_revenue','#indie_success'], batch:'2025-Q3', cats:['🖥️ PC','🎯 장르'], source:'복수 소스', credibility:4, url:null },
+  { id:'ARC_Q3_004', date:'2024', outcome:'mixed', title:'2024 모바일 다운로드 49B — 7% 감소', summary:'다운로드 -7% vs IAP +4% 성장. 수익-볼륨 이분화 시작.', lesson:'2025년 심화될 패턴의 선행 신호. 설치 중심에서 수익화 중심으로 전략 전환.', tags:['#mobile_revenue'], batch:'2025-Q3', cats:['📱 모바일'], source:'Sensor Tower', credibility:5, url:'https://icon-era.com/statistics/gaming-industry-revenue-statistics/' },
+  { id:'ARC_Q3_005', date:'2024', outcome:'failure', title:'2023 신규 게임 수익 90% — 43개 타이틀 독점', summary:'상위 집중 구조 초기 확인. 신규 진입 타이틀의 수익 기회 극소화.', lesson:'에버그린 타이틀 지배 구조 초기 확인. 2025 심화 예측 근거.', tags:['#FPS_shooter'], batch:'2025-Q3', cats:['📊 전체','🎯 장르'], source:'Newzoo', credibility:5, url:'https://elements.visualcapitalist.com/wp-content/uploads/2024/04/2024_Newzoo_PC-Console-Gaming-Report.pdf' },
+];
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+// Register datalabels plugin globally
+Chart.register(ChartDataLabels);
+// Disable datalabels globally — only donut charts enable individually
+Chart.defaults.set('plugins.datalabels', { display: false });
+
+const AppState = {
+  activeView: 'v1',
+  insightPeriod: 'all',
+  outcomeFilter: 'all',
+  archiveOutcome: 'all',
+  sidebarCat: 'all',
+  exchangeRate: 1450,
+};
+
+
+// ════════════════════════════════════════════════════════
+// NUMBER FORMAT ENGINE (Korean Units)
+// ════════════════════════════════════════════════════════
+
+// ─── MONEY: USD Billion → KRW ───────────────────────
+// 1B USD × rate = rate×10억원 = rate/1000 조원
+function fmtKRW(usdB) {
+  const rate = AppState.exchangeRate;
+  const jo  = usdB * rate / 1000;   // 조원
+  const eok = usdB * rate * 10;     // 억원
+  if (jo >= 100) return Math.round(jo).toLocaleString() + '조원';
+  if (jo >= 1)   return (Math.round(jo * 10) / 10).toFixed(1) + '조원';
+  // 1조 미만: 억원 단위
+  if (eok >= 5000) return (Math.round(eok / 1000)).toLocaleString() + '천억원';
+  if (eok >= 100)  return Math.round(eok / 100) * 100 + '억원';
+  if (eok >= 10)   return Math.round(eok) + '억원';
+  return (Math.round(eok * 10) / 10).toFixed(1) + '억원';
+}
+
+// Chart Y-axis tick — fmtKRW와 동일 로직으로 통일 (suffix: 조/천억/억)
+function fmtJo(rawVal) {
+  // rawVal: 이미 변환된 조원 값 (usdB * rate / 1000)
+  if (rawVal >= 100) return Math.round(rawVal).toLocaleString() + '조';
+  if (rawVal >= 1)   return (Math.round(rawVal * 10) / 10).toFixed(1) + '조';
+  // 1조 미만: 억원 단위 (fmtKRW와 동일 분기)
+  const eok = rawVal * 10000;  // 억원 (rawVal은 조원이므로 × 10000)
+  if (eok >= 5000) return Math.round(eok / 1000) + '천억';
+  if (eok >= 100)  return (Math.round(eok / 100) * 100) + '억';
+  return Math.round(eok) + '억';
+}
+
+// ─── ARPU / PER-PERSON: USD → KRW ────────────────────
+function fmtKRW_pp(usd) {
+  const krw = Math.round(usd * AppState.exchangeRate);
+  if (krw >= 1000000) return Math.round(krw / 10000).toLocaleString() + '만원';
+  if (krw >= 10000)   return (Math.round(krw / 10000 * 10) / 10).toFixed(1) + '만원';
+  if (krw >= 1000)    return (Math.round(krw / 100) / 10).toFixed(1) + '천원';
+  return krw.toLocaleString() + '원';
+}
+
+// ─── PLAYER COUNT: Billion → 억명 ────────────────────
+function fmtPeople(billion) {
+  const eok = billion * 10;
+  if (eok >= 100) return Math.round(eok) + '억명';
+  if (eok >= 10)  return (Math.round(eok * 10) / 10).toFixed(1) + '억명';
+  if (eok >= 1)   return (Math.round(eok * 10) / 10).toFixed(1) + '억명';
+  const man = billion * 10000;
+  return Math.round(man).toLocaleString() + '만명';
+}
+
+// ─── PLAYER COUNT: Million → 억명/만명 ───────────────
+function fmtPeopleM(million) {
+  return fmtPeople(million / 1000);
+}
+
+// ─── DOWNLOAD COUNT: Billion → 억건 ──────────────────
+function fmtDL(billion) {
+  const eok = billion * 10;
+  if (eok >= 100) return Math.round(eok).toLocaleString() + '억건';
+  return (Math.round(eok * 10) / 10).toFixed(1) + '억건';
+}
+
+// (autoSize removed — unified 22px)
+
+function applyRate() {
+  const inp = document.getElementById('fxInput');
+  const rate = parseInt(inp.value);
+  if (!rate || rate < 900 || rate > 3000) {
+    inp.style.borderColor = 'var(--red)';
+    setTimeout(() => inp.style.borderColor = '', 1000);
+    return;
+  }
+  AppState.exchangeRate = rate;
+  document.getElementById('fxBadge').textContent = '₩' + rate.toLocaleString() + ' 기준';
+
+  // Update money (USD Billion)
+  document.querySelectorAll('[data-usd-b]').forEach(el => {
+    el.textContent = fmtKRW(parseFloat(el.dataset.usdB));
+  });
+
+  // Update per-person ARPU
+  document.querySelectorAll('[data-usd-pp]').forEach(el => {
+    el.textContent = fmtKRW_pp(parseFloat(el.dataset.usdPp));
+  });
+
+  // Update player counts (billions)
+  document.querySelectorAll('[data-cnt-b]').forEach(el => {
+    el.textContent = fmtPeople(parseFloat(el.dataset.cntB));
+  });
+
+  // Update player counts (millions)
+  document.querySelectorAll('[data-cnt-m]').forEach(el => {
+    el.textContent = fmtPeopleM(parseFloat(el.dataset.cntM));
+  });
+
+  // Update download counts (billions)
+  document.querySelectorAll('[data-dl-b]').forEach(el => {
+    el.textContent = fmtDL(parseFloat(el.dataset.dlB));
+  });
+
+  // Update ticker
+  initTicker();
+
+  // Re-render visible charts
+  Object.keys(chartInstances).forEach(id => {
+    if (chartInstances[id]) {
+      try { chartInstances[id].destroy(); } catch(e) {}
+      delete chartInstances[id];
+    }
+  });
+  initChartsForView(AppState.activeView);
+  setTimeout(() => ensureSidebar(), 100);
+}
+
+function initTicker() {
+  const t = v => fmtKRW(v);
+  const p = v => fmtPeople(v);
+  const d = v => fmtDL(v);
+  const items = [
+    `✅ 2025 글로벌 시장 ${t(197.0)} 확정 (+7.5% YoY, 예측 초과)`,
+    `✅ PC 매출 ${t(43.0)} (+10.4%) 서프라이즈`,
+    `❌ PC Shooter ${t(9.0)} (-5% YoY) 역성장 구조화`,
+    `✅ 2028년 PC가 Console 매출 추월 공식 전망 (CAGR 6.6% vs 4.4%)`,
+    `⚡ 모바일 ${t(108)} 성장 vs 다운로드 ${d(50.41)} -7.2% ↓ 이중 신호`,
+    `✅ 글로벌 게이머 ${p(3.578)} · 유료 Payer ${p(1.6)} (+4.9%)`,
+    `❌ Gen AI 부정 인식 52% (전년 30%) 급등`,
+  ];
+  const el = document.getElementById('tickerContent');
+  if (el) el.textContent = items.join('  |  ');
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(id)) n.classList.add('active');
+  });
+  AppState.activeView = id;
+  setTimeout(() => initChartsForView(id), 50);
+  // 사이드바 인사이트 항상 유지
+  setTimeout(() => ensureSidebar(), 80);
+}
+
+function setSubTab(btn, tabGroupId, targetId) {
+  const group = document.getElementById(tabGroupId);
+  group.querySelectorAll('[id^="' + tabGroupId.replace('-tabs','') + '-t"]').forEach(t => t.style.display='none');
+  document.getElementById(targetId).style.display='block';
+  btn.closest('.sub-tabs').querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  setTimeout(() => initChartsForView(AppState.activeView), 50);
+}
+
+// ════════════════════════════════════════════════════════
+// FILTER SYSTEM
+// ════════════════════════════════════════════════════════
+function setFilter(type, val, btn) {
+  btn.closest('.filter-group').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function resetFilters() {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn[data-val="all"]').forEach(b => b.classList.add('active'));
+  document.querySelectorAll('.filter-btn[data-val="newzoo"]').forEach(b => b.classList.add('active'));
+  document.querySelectorAll('.filter-btn[data-val="actual"]').forEach(b => { });
+}
+
+// ════════════════════════════════════════════════════════
+// INSIGHTS SYSTEM
+// ════════════════════════════════════════════════════════
+// setInsightPeriod removed — fixed 3-month window
+
+function setOutcomeFilter(btn, outcome) {
+  document.querySelectorAll('#outcomeFilterTabs .outcome-tab').forEach(b => {
+    b.classList.remove('active-all','active-success','active-failure','active-mixed');
+  });
+  btn.classList.add('active-' + outcome);
+  AppState.outcomeFilter = outcome;
+  renderInsights();
+}
+
+function setArchiveOutcome(btn, outcome) {
+  document.querySelectorAll('#archiveOutcomeTabs .outcome-tab').forEach(b => {
+    b.classList.remove('active-all','active-success','active-failure','active-mixed');
+  });
+  btn.classList.add('active-' + outcome);
+  AppState.archiveOutcome = outcome;
+  renderArchive();
+}
+
+function renderInsights() {
+  const q = (document.getElementById('insightSearch')?.value || '').toLowerCase();
+  const RECENT_PERIODS = ['hot', '1m', '3m'];
+  let items = INSIGHTS.filter(i => {
+    const periodOk = RECENT_PERIODS.includes(i.period);
+    const outcomeOk = AppState.outcomeFilter === 'all' || i.outcome === AppState.outcomeFilter;
+    const searchOk = !q || i.title.toLowerCase().includes(q) || i.summary.toLowerCase().includes(q);
+    return periodOk && outcomeOk && searchOk;
+  });
+  document.getElementById('insightContainer').innerHTML = items.map(renderInsightCard).join('');
+  renderDistBar('insightDistBar', items);
+}
+
+function renderArchive() {
+  const q = (document.getElementById('archiveSearch')?.value || '').toLowerCase();
+  let items = ARCHIVE_DATA.filter(i => {
+    const outcomeOk = AppState.archiveOutcome === 'all' || i.outcome === AppState.archiveOutcome;
+    const searchOk = !q || i.title.toLowerCase().includes(q) || i.summary.toLowerCase().includes(q);
+    return outcomeOk && searchOk;
+  });
+  document.getElementById('archiveContainer').innerHTML = items.map(renderInsightCard).join('');
+  renderDistBar('archiveDistBar', items);
+}
+
+function renderInsightCard(i) {
+  const icons = { success:'✅ SUCCESS', failure:'❌ FAILURE', mixed:'⚡ MIXED' };
+  const stars = '★'.repeat(i.credibility) + '☆'.repeat(5-i.credibility);
+  return `
+    <div class="insight-card insight-card--${i.outcome}">
+      <div class="insight-card-header">
+        <span class="outcome-badge outcome-badge--${i.outcome}">${icons[i.outcome]}</span>
+        <span class="insight-date">${i.date}</span>
+        ${i.fps ? '<span style="font-size:10px;color:var(--gold);font-family:var(--font-data)">🎯 FPS직결</span>' : ''}
+      </div>
+      <div class="insight-title">${i.title}</div>
+      <div class="insight-summary">${i.summary}</div>
+      ${i.lesson ? `<div class="insight-lesson">${i.lesson}</div>` : ''}
+      <div class="insight-footer">
+        ${(i.cats||[]).map(c => `<span class="cat-badge">${c}</span>`).join('')}
+        <span class="credibility">${stars}</span>
+        <a class="source-link" href="${i.url||'#'}" target="_blank">${i.source} ↗</a>
+      </div>
+    </div>`;
+}
+
+function renderDistBar(elId, items) {
+  const s = items.filter(i => i.outcome==='success').length;
+  const f = items.filter(i => i.outcome==='failure').length;
+  const m = items.filter(i => i.outcome==='mixed').length;
+  const t = items.length;
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = `
+    <div class="outcome-dist-item"><span class="outcome-badge outcome-badge--success">✅</span><div class="outcome-dist-bar" style="width:${s*5}px;background:var(--outcome-success)"></div><span style="color:var(--outcome-success)">${s}건</span></div>
+    <div class="outcome-dist-item"><span class="outcome-badge outcome-badge--failure">❌</span><div class="outcome-dist-bar" style="width:${f*5}px;background:var(--outcome-failure)"></div><span style="color:var(--outcome-failure)">${f}건</span></div>
+    <div class="outcome-dist-item"><span class="outcome-badge outcome-badge--mixed">⚡</span><div class="outcome-dist-bar" style="width:${m*5}px;background:var(--outcome-mixed)"></div><span style="color:var(--outcome-mixed)">${m}건</span></div>
+    <span class="outcome-dist-total">전체 ${t}건</span>`;
+}
+
+function renderRisks() {
+  const icons = { high:'🔴', mid:'🟠', low:'🟡' };
+  const el = document.getElementById('riskContainer');
+  if (el) el.innerHTML = RISKS.map(r => `<div class="risk-chip risk-${r.severity}"><span>${icons[r.severity]}</span><strong>${r.id}</strong><span>${r.title}</span><span style="font-size:10px;color:var(--text-muted)">— ${r.data}</span></div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// RISK VIEW RENDER (V8)
+// ════════════════════════════════════════════════════════
+const AppRisk = { filter: 'all' };
+
+function setRiskFilter(btn, level) {
+  document.querySelectorAll('#riskFilterTabs .outcome-tab').forEach(b => {
+    b.classList.remove('active-all','active-success','active-failure','active-mixed');
+    b.style.fontWeight = '';
+  });
+  if (level === 'all') btn.classList.add('active-all');
+  else if (level === 'high') btn.classList.add('active-failure');
+  else if (level === 'mid') btn.classList.add('active-mixed');
+  else btn.classList.add('active-mixed');
+  btn.style.fontWeight = '700';
+  AppRisk.filter = level;
+  renderRiskCards();
+}
+
+function renderRiskCards() {
+  const items = AppRisk.filter === 'all'
+    ? RISKS
+    : RISKS.filter(r => r.severity === AppRisk.filter);
+
+  const icons = { high: '🔴', mid: '🟠', low: '🟡' };
+  const labels = { high: '높음', mid: '중간', low: '낮음' };
+  const outcomeMap = { high: 'failure', mid: 'mixed', low: 'mixed' };
+
+  document.getElementById('riskCardContainer').innerHTML = items.map(r => `
+    <div class="insight-card insight-card--${outcomeMap[r.severity]}"
+         onclick="window.open('${r.url||'#'}','_blank')" style="cursor:pointer" title="원소스 보기 ↗">
+      <div class="insight-card-header">
+        <span class="outcome-badge outcome-badge--${outcomeMap[r.severity]}">${icons[r.severity]} ${labels[r.severity]} 리스크</span>
+        <span class="insight-date">${r.id}</span>
+      </div>
+      <div class="insight-title">${r.title}</div>
+      <div class="insight-summary">${r.data}</div>
+      <div class="insight-footer">
+        <span class="cat-badge">📡 ${r.source}</span>
+        ${r.url ? `<a class="source-link" href="${r.url}" target="_blank">${r.source} ↗</a>` : ''}
+      </div>
+    </div>`).join('');
+
+  // dist bar
+  const high = RISKS.filter(r=>r.severity==='high').length;
+  const mid  = RISKS.filter(r=>r.severity==='mid').length;
+  const low  = RISKS.filter(r=>r.severity==='low').length;
+  const el = document.getElementById('riskDistBar');
+  if (el) el.innerHTML = `
+    <div class="outcome-dist-item"><span class="outcome-badge outcome-badge--failure">🔴 높음</span><div class="outcome-dist-bar" style="width:${high*5}px;background:var(--outcome-failure)"></div><span style="color:var(--outcome-failure)">${high}건</span></div>
+    <div class="outcome-dist-item"><span class="outcome-badge outcome-badge--mixed">🟠 중간</span><div class="outcome-dist-bar" style="width:${mid*5}px;background:var(--outcome-mixed)"></div><span style="color:var(--outcome-mixed)">${mid}건</span></div>
+    <div class="outcome-dist-item"><span class="outcome-badge outcome-badge--mixed">🟡 낮음</span><div class="outcome-dist-bar" style="width:${low*5}px;background:var(--gold)"></div><span style="color:var(--gold)">${low}건</span></div>
+    <span class="outcome-dist-total">전체 ${RISKS.length}건</span>`;
+}
+
+
+function renderSidebar() {
+  try {
+    const cat = AppState.sidebarCat || 'all';
+    let items = INSIGHTS.filter(i => {
+      if (cat === 'all') return true;
+      if (cat === 'pc') return i.cats?.some(c => c.includes('PC'));
+      if (cat === 'mobile') return i.cats?.some(c => c.includes('모바일'));
+      if (cat === 'genre') return i.cats?.some(c => c.includes('장르'));
+      if (cat === 'region') return i.cats?.some(c => c.includes('지역'));
+      return true;
+    });
+    // 카테고리 필터 결과가 없으면 전체로 폴백
+    if (items.length === 0) items = INSIGHTS;
+    items = items.slice(0, 4);
+
+    const icons = { success:'✅', failure:'❌', mixed:'⚡' };
+    const el = document.getElementById('sidebarInsights');
+    if (!el) return;
+    el.innerHTML = items.map(i => `
+      <div class="sidebar-mini-card sidebar-mini-card--${i.outcome}" onclick="showView('v7')" style="cursor:pointer">
+        <div class="sidebar-card-head">
+          <span class="outcome-badge outcome-badge--${i.outcome}">${icons[i.outcome] || '●'}</span>
+          <span class="insight-date">${i.date || ''}</span>
+        </div>
+        <div class="sidebar-card-title">${(i.title||'').slice(0,45)}${(i.title||'').length>45?'…':''}</div>
+        ${i.lesson ? `<div class="sidebar-card-lesson">🔑 ${i.lesson.slice(0,50)}…</div>` : ''}
+      </div>`).join('');
+
+    const s = items.filter(i=>i.outcome==='success').length;
+    const f = items.filter(i=>i.outcome==='failure').length;
+    const m = items.filter(i=>i.outcome==='mixed').length;
+    const distEl = document.getElementById('sidebarDist');
+    if (distEl) distEl.innerHTML = `
+      <div style="display:flex;gap:8px;font-family:var(--font-data);font-size:11px;justify-content:center">
+        <span style="color:var(--outcome-success)">✅${s}</span>
+        <span style="color:var(--outcome-failure)">❌${f}</span>
+        <span style="color:var(--outcome-mixed)">⚡${m}</span>
+        <span style="color:var(--text-muted)">(${items.length}건)</span>
+      </div>`;
+  } catch(e) {
+    console.warn('renderSidebar error:', e);
+  }
+}
+
+// 사이드바 인사이트 보존 보장 — 비어있으면 재렌더
+function ensureSidebar() {
+  const el = document.getElementById('sidebarInsights');
+  if (el && el.children.length === 0) {
+    renderSidebar();
+  }
+}
+
+function setSidebarCat(btn, cat) {
+  btn.closest('.sidebar-cat-tabs').querySelectorAll('.sidebar-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  AppState.sidebarCat = cat;
+  renderSidebar();
+}
+
+function renderValidation() {
+  const tbody = document.getElementById('validationTable');
+  if (!tbody) return;
+  tbody.innerHTML = VALIDATION_DATA.map(r => {
+    const statusIcon = r.status === 'pass' ? '<span class="vi-pass">✅</span>' : r.status === 'warn' ? '<span class="vi-warn">⚠️</span>' : '<span class="vi-fail">❌</span>';
+    const tierClass = r.tier === 'T1' ? 'tier-t1' : r.tier === 'T2' ? 'tier-t2' : 'tier-t3';
+    const TIER_TITLES = {
+      T1: 'T1 — Tier 1 : 공식 1차 출처 데이터 (리서치 기관 직접 발표 확정 수치)',
+      T2: 'T2 — Tier 2 : 계산·파생값 (T1 기반 산술 계산 또는 복수 소스 조합)',
+      T3: 'T3 — Tier 3 : 추정·전망치 (분석기관 Forecast 또는 방법론 미공개 추정값)',
+    };
+    // Convert raw USD strings to KRW in val/alt display
+    function cvVal(v) {
+      const m = v.match(/^\$?([\d.]+)B$/);
+      if (m) return fmtKRW(parseFloat(m[1]));
+      const m2 = v.match(/^\$([\d.]+)$/);
+      if (m2) return fmtKRW_pp(parseFloat(m2[1]));
+      const m3 = v.match(/^([\d.]+)B$/);
+      if (m3) return fmtPeople(parseFloat(m3[1]));
+      return v;
+    }
+    return `<tr>
+      <td style="font-family:var(--font-data);font-size:9px;color:var(--text-muted)">${r.id}</td>
+      <td style="color:var(--text-secondary)">${r.name}</td>
+      <td style="font-family:var(--font-data);color:var(--text-primary)">${cvVal(r.val)}</td>
+      <td style="font-size:10px;color:var(--text-muted)">${r.src}</td>
+      <td><span class="kpi-tier ${tierClass}" title="${TIER_TITLES[r.tier]||''}" style="cursor:help;position:relative">${r.tier}</span></td>
+      <td style="font-family:var(--font-data);font-size:10px;color:var(--text-muted)">${cvVal(r.alt)}</td>
+      <td style="font-size:10px;color:var(--text-muted)">${r.altSrc}</td>
+      <td style="font-size:11px">${statusIcon} <span style="font-size:10px;color:var(--text-muted)">${r.note}</span></td>
+    </tr>`;
+  }).join('');
+
+  const rulesEl = document.getElementById('validationRules');
+  if (!rulesEl) return;
+  rulesEl.innerHTML = VALIDATION_RULES.map(r => {
+    const icon = r.status === 'pass' ? '<span class="vi-pass">✅</span>' : '<span class="vi-warn">⚠️</span>';
+    return `<div class="validation-row">
+      <div class="validation-id">${r.id}</div>
+      <div class="validation-name">${r.name}</div>
+      <div class="validation-result">${r.calc}</div>
+      <div class="validation-status">${icon}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSources() {
+  const el = document.getElementById('sourceGrid');
+  if (!el) return;
+  const statusIcon = { current:'🟢 최신', pending:'🟡 갱신 대기', stale:'🔴 미확인' };
+  el.innerHTML = SOURCES.map(s => {
+    const stars = '★'.repeat(s.credibility) + '☆'.repeat(5-s.credibility);
+    return `<div class="source-card">
+      <div class="source-card-name">${s.name}</div>
+      <div class="source-status">${statusIcon[s.status]} &nbsp; <span class="source-stars">${stars}</span></div>
+      <div class="source-scope">범위: ${s.scope}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">최신: ${s.latest}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">다음: ${s.next}</div>
+      <ul class="source-reports">
+        ${s.reports.map(r => `<li><a href="${r.url}" target="_blank">${r.name} (${r.date}) ↗</a></li>`).join('')}
+      </ul>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// CHART.JS
+// ════════════════════════════════════════════════════════
+Chart.defaults.color = '#7AA8C8';
+Chart.defaults.borderColor = 'rgba(0,212,255,0.08)';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 10;
+
+const CHART_COLORS = {
+  cyan:    '#00D4FF', gold:    '#FFD166', green:   '#00FF9D',
+  red:     '#FF3B5C', orange:  '#FF8C42', purple:  '#BD93F9',
+  teal:    '#20E3B2', muted:   '#5A7A96',
+};
+function rgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+const chartInstances = {};
+
+function safeCreate(id, config) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (chartInstances[id]) { chartInstances[id].destroy(); }
+  chartInstances[id] = new Chart(el, config);
+}
+
+function initChartsForView(viewId) {
+  if (viewId === 'v1') initV1Charts();
+  if (viewId === 'v2') initV2Charts();
+  if (viewId === 'v3') initV3Charts();
+  if (viewId === 'v4') initV4Charts();
+  if (viewId === 'v5') initV5Charts();
+  if (viewId === 'v10') initV5Charts();
+}
+
+function makeForecastPlugin() {
+  return {
+    id: 'forecastBg',
+    beforeDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      if (!chartArea || !scales.x) return;
+      const xAxis = scales.x;
+      const n = xAxis.ticks.length;
+      const fIdx = 4; // 2026F starts at index 4
+      if (n <= fIdx) return;
+      const x = xAxis.getPixelForTick(fIdx);
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,209,102,0.04)';
+      ctx.fillRect(x, chartArea.top, chartArea.right - x, chartArea.bottom - chartArea.top);
+      ctx.strokeStyle = 'rgba(255,209,102,0.2)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke();
+      ctx.restore();
+    }
+  };
+}
+
+function initV1Charts() {
+  // Global Area Chart
+  safeCreate('chartGlobal', {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        {
+          label: 'Newzoo SW 기준', data: DATA.global.total.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+          borderColor: CHART_COLORS.cyan, borderWidth: 2,
+          backgroundColor: rgba('#00D4FF', 0.08),
+          fill: true, pointRadius: [4,4,4,7,4,4,4],
+          pointBackgroundColor: DATA.global.total.map((_,i) => i===3 ? '#00D4FF' : rgba('#00D4FF',0.7)),
+          tension: 0.3,
+          borderDash: [0,0,0,0,5,5,5],
+          segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [5,4] : undefined },
+        },
+        {
+          label: 'BCG 광의', data: DATA.global.bcg.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+          borderColor: rgba('#FFD166',0.6), borderWidth: 1.5,
+          backgroundColor: 'transparent', borderDash: [6,4],
+          pointRadius: 2, tension: 0.3,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12, padding: 16 }},
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtJo(ctx.raw)}`,
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }},
+        y: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+      }
+    },
+    plugins: [makeForecastPlugin()],
+  });
+
+  // Platform Donut
+  safeCreate('chartPlatformDonut', {
+    type: 'doughnut',
+    data: {
+      labels: ['모바일', 'PC', '콘솔'],
+      datasets: [{
+        get data() { const r=AppState.exchangeRate/1000; return [108*r, 43*r, 45.3*r]; },
+        backgroundColor: [rgba('#00D4FF',0.8), rgba('#00FF9D',0.8), rgba('#FFD166',0.8)],
+        borderColor: ['#00D4FF','#00FF9D','#FFD166'],
+        borderWidth: 1, hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '58%',
+      layout: { padding: { top: 8, bottom: 8 } },
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 10 } }},
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtJo(ctx.raw)} (${Math.round(ctx.raw/(196.3*AppState.exchangeRate/1000)*100)}%)` }},
+        datalabels: {
+          color: '#FFFFFF',
+          textStrokeColor: 'rgba(0,0,0,0.6)',
+          textStrokeWidth: 3,
+          font: { family: "'JetBrains Mono', monospace", size: 11, weight: '700' },
+          formatter: (val, ctx) => {
+            const total = 196.3 * AppState.exchangeRate / 1000;
+            const pct = Math.round(val / total * 100);
+            const lbl = ctx.chart.data.labels[ctx.dataIndex];
+            return lbl + '\n' + fmtJo(val) + '\n(' + pct + '%)';
+          },
+          textAlign: 'center',
+          display: true,
+        }
+      }
+    }
+  });
+}
+
+function initV2Charts() {
+  // Platform Revenue Stacked
+  safeCreate('chartRevenue', {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: '모바일', data: DATA.global.mobile.map(v=>Math.round(v*AppState.exchangeRate/100)/10), backgroundColor: rgba('#00D4FF',0.75), borderColor: '#00D4FF', borderWidth: 1 },
+        { label: 'PC',     data: DATA.global.pc.map(v=>Math.round(v*AppState.exchangeRate/100)/10),     backgroundColor: rgba('#00FF9D',0.75), borderColor: '#00FF9D', borderWidth: 1 },
+        { label: '콘솔',   data: DATA.global.console.map(v=>Math.round(v*AppState.exchangeRate/100)/10), backgroundColor: rgba('#FFD166',0.75), borderColor: '#FFD166', borderWidth: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { boxWidth: 12 }}},
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(0,212,255,0.05)' }},
+        y: { stacked: true, grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+      }
+    },
+    plugins: [makeForecastPlugin()],
+  });
+
+  // PC vs Console
+  safeCreate('chartPCvsConsole', {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        {
+          label: 'PC', data: DATA.pcVsConsole.pc.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+          borderColor: CHART_COLORS.cyan, borderWidth: 2.5,
+          pointRadius: [3,3,3,6,3,3,6], tension: 0.3,
+          backgroundColor: rgba('#00D4FF',0.05), fill: false,
+          segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [6,4] : undefined },
+        },
+        {
+          label: '콘솔', data: DATA.pcVsConsole.console.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+          borderColor: CHART_COLORS.gold, borderWidth: 2.5,
+          pointRadius: [3,3,3,6,3,3,6], tension: 0.3,
+          backgroundColor: rgba('#FFD166',0.05), fill: false,
+          segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [6,4] : undefined },
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12 }},
+        annotation: {},
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }},
+        y: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+      }
+    },
+    plugins: [makeForecastPlugin()],
+  });
+
+  // PC+Console Total
+  safeCreate('chartPCConTotal', {
+    type: 'bar',
+    data: {
+      labels: DATA.pcConsole.years,
+      datasets: [{
+        label: 'PC+Console 합산', data: DATA.pcConsole.total.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: DATA.pcConsole.years.map((y,i) => i <= 7 ? rgba('#00D4FF',0.6) : rgba('#FFD166',0.5)),
+        borderColor: DATA.pcConsole.years.map((y,i) => i <= 7 ? '#00D4FF' : '#FFD166'),
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { maxRotation: 45 }},
+        y: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+      }
+    }
+  });
+
+  // BCG vs NZ
+  safeCreate('chartBCGvsNZ', {
+    type: 'bar',
+    data: {
+      labels: [2022, 2023, 2024, 2025, 2026, 2027, 2028],
+      datasets: [
+        { label: 'Newzoo SW 기준', data: [173.8,176.8,182.5,197.0,196.1,201.6,215].map(v=>Math.round(v*AppState.exchangeRate/100)/10), backgroundColor: rgba('#00D4FF',0.6), borderColor: '#00D4FF', borderWidth: 1 },
+        { label: 'BCG 광의 기준',  data: [236,247,254,263,281,299,319].map(v=>Math.round(v*AppState.exchangeRate/100)/10), backgroundColor: rgba('#FFD166',0.5), borderColor: '#FFD166', borderWidth: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { boxWidth: 12 }}},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }},
+        y: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+      }
+    }
+  });
+
+  // PC BM
+  safeCreate('chartPCBM', {
+    type: 'bar',
+    data: {
+      labels: ['MTX', '프리미엄', 'DLC', '구독'],
+      datasets: [{
+        label: '매출 (원화)', data: [20.6,12.5,8.5,1.4].map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: [rgba('#00D4FF',0.7), rgba('#00FF9D',0.7), rgba('#FFD166',0.7), rgba('#BD93F9',0.7)],
+        borderColor: ['#00D4FF','#00FF9D','#FFD166','#BD93F9'], borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+
+  // Console BM
+  safeCreate('chartConsoleBM', {
+    type: 'bar',
+    data: {
+      labels: ['프리미엄', 'MTX', '구독', 'DLC'],
+      datasets: [{
+        label: '매출 (원화)', data: [22.7,12.3,8.2,2.2].map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: [rgba('#00FF9D',0.7), rgba('#FF3B5C',0.7), rgba('#BD93F9',0.7), rgba('#FFD166',0.7)],
+        borderColor: ['#00FF9D','#FF3B5C','#BD93F9','#FFD166'], borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+
+  // BCG BM
+  safeCreate('chartBCGBM', {
+    type: 'bar',
+    data: {
+      labels: DATA.bcgBM.labels,
+      datasets: [{
+        label: '2025E (조원)', data: DATA.bcgBM.values.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: DATA.bcgBM.colors.map(c => rgba(c, 0.75)),
+        borderColor: DATA.bcgBM.colors, borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+}
+
+function initV3Charts() {
+  safeCreate('chartPlayers', {
+    type: 'line',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: '총 플레이어 (Unique)', data: DATA.players.total, borderColor: CHART_COLORS.cyan, borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true, backgroundColor: rgba('#00D4FF',0.05), segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [5,4] : undefined } },
+        { label: '유료 Payer', data: [1.38, 1.41, 1.524, 1.6, 1.67, 1.74, 1.80], borderColor: CHART_COLORS.gold, borderWidth: 2, tension: 0.3, pointRadius: 4, fill: false, segment: { borderDash: ctx => ctx.p0DataIndex >= 3 ? [5,4] : undefined } },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12 }},
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtPeople(ctx.raw)}`,
+            afterLabel: ctx => {
+              const years = ['2022','2023','2024','2025A','2026F','2027F','2028F'];
+              const yoy = [null,'+1.9%','+4.5%','+4.4%','~+4%','~+3.8%','~+3.6%'];
+              const i = ctx.dataIndex;
+              return i > 0 && ctx.datasetIndex === 0 ? `  YoY: ${yoy[i]}` : '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }},
+        y: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtPeople(v) }},
+      }
+    },
+    plugins: [makeForecastPlugin()],
+  });
+
+  safeCreate('chartPlayersBreakdown', {
+    type: 'bar',
+    data: {
+      labels: YEARS,
+      datasets: [
+        { label: '모바일',  data: DATA.players.mobile,  backgroundColor: rgba('#00D4FF',0.7), borderColor: '#00D4FF', borderWidth: 1 },
+        { label: 'PC',      data: DATA.players.pc,      backgroundColor: rgba('#00FF9D',0.7), borderColor: '#00FF9D', borderWidth: 1 },
+        { label: '콘솔',    data: DATA.players.console,  backgroundColor: rgba('#FFD166',0.7), borderColor: '#FFD166', borderWidth: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { boxWidth: 12 }}, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtPeople(ctx.raw)}` }}},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }},
+        y: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtPeople(v) }},
+      }
+    }
+  });
+}
+
+function initV4Charts() {
+  safeCreate('chartRegion', {
+    type: 'bar',
+    data: {
+      labels: DATA.region.labels,
+      datasets: [{
+        label: '2025A (조원)', data: DATA.region.values.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: DATA.region.colors.map(c => rgba(c, 0.7)),
+        borderColor: DATA.region.colors, borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmtJo(ctx.raw)}  YoY: +${DATA.region.yoy[ctx.dataIndex]}%` }}},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+
+  safeCreate('chartRegionPie', {
+    type: 'doughnut',
+    data: {
+      labels: DATA.region.labels,
+      datasets: [{
+        data: [46, 28, 18, 4, 4],
+        backgroundColor: DATA.region.colors.map(c => rgba(c, 0.75)),
+        borderColor: DATA.region.colors, borderWidth: 1.5, hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '55%',
+      layout: { padding: { top: 8, bottom: 8 } },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 10 } }},
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}%` }},
+        datalabels: {
+          color: '#FFFFFF',
+          textStrokeColor: 'rgba(0,0,0,0.65)',
+          textStrokeWidth: 3,
+          font: { family: "'JetBrains Mono', monospace", size: 10, weight: '700' },
+          formatter: (val, ctx) => {
+            const lbl = ctx.chart.data.labels[ctx.dataIndex];
+            return lbl + '\n' + val + '%';
+          },
+          textAlign: 'center',
+          display: ctx => {
+            return ctx.dataset.data[ctx.dataIndex] >= 4;
+          },
+        }
+      }
+    }
+  });
+}
+
+function initV5Charts() {
+  safeCreate('chartMobileGenre', {
+    type: 'bar',
+    data: {
+      labels: DATA.mobileGenre.labels,
+      datasets: [{
+        label: 'IAP 매출 (조원)', data: DATA.mobileGenre.values.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: DATA.mobileGenre.colors.map(c => rgba(c, 0.75)),
+        borderColor: DATA.mobileGenre.colors, borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+
+  safeCreate('chartPCGenre', {
+    type: 'bar',
+    data: {
+      labels: DATA.pcGenre.labels,
+      datasets: [{
+        label: '매출 (조원)', data: DATA.pcGenre.values.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: DATA.pcGenre.colors.map(c => rgba(c, 0.75)),
+        borderColor: DATA.pcGenre.colors, borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+
+  safeCreate('chartConsoleGenre', {
+    type: 'bar',
+    data: {
+      labels: DATA.consoleGenre.labels,
+      datasets: [{
+        label: '매출 (조원)', data: DATA.consoleGenre.values.map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: DATA.consoleGenre.colors.map(c => rgba(c, 0.75)),
+        borderColor: DATA.consoleGenre.colors, borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(0,212,255,0.05)' }, ticks: { callback: v => fmtJo(v) }},
+        y: { grid: { display: false }},
+      }
+    }
+  });
+
+  safeCreate('chartFPSMAU', {
+    type: 'doughnut',
+    data: {
+      labels: ['Fortnite', 'CS2', 'CoD HQ', 'PUBG', 'BF6', '기타'],
+      datasets: [{
+        data: [33, 25, 18, 12, 7, 5],
+        backgroundColor: ['#E63946','#F4845F','#E9C46A','#8338EC','#3A86FF','#6C757D'].map(c => rgba(c, 0.85)),
+        borderColor:     ['#E63946','#F4845F','#E9C46A','#8338EC','#3A86FF','#6C757D'],
+        borderWidth: 1.5, hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '50%',
+      layout: { padding: { right: 4 } },
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#FFFFFF',
+            boxWidth: 9, padding: 5, font: { size: 9, weight: '600' },
+            generateLabels: chart => {
+              const ds = chart.data.datasets[0];
+              return chart.data.labels.map((lbl, i) => ({
+                text: lbl + '  ~' + Math.round(140 * ds.data[i] / 100) + 'M  (' + ds.data[i] + '%)',
+                fillStyle: ds.backgroundColor[i],
+                strokeStyle: ds.borderColor[i],
+                lineWidth: 1,
+                index: i,
+                fontColor: '#FFFFFF',
+              }));
+            }
+          }
+        },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: MAU ~${Math.round(140 * ctx.raw / 100)}M (쉐어 ${ctx.raw}%)` }},
+        datalabels: {
+          color: '#FFFFFF',
+          textStrokeColor: 'rgba(0,0,0,0.75)',
+          textStrokeWidth: 3,
+          font: { family: "'JetBrains Mono', monospace", size: 9, weight: '700' },
+          formatter: (val, ctx) => {
+            // MAU 수치: 상위 6개 타이틀 합산 추정 총 MAU ~140M 기준
+            const totalMau = 140;
+            const mau = Math.round(totalMau * val / 100);
+            const lbl = ctx.chart.data.labels[ctx.dataIndex];
+            return lbl + '\n' + 'MAU ~' + mau + 'M\n(' + val + '%)';
+          },
+          textAlign: 'center',
+          display: ctx => ctx.dataset.data[ctx.dataIndex] >= 12,
+        }
+      }
+    }
+  });
+
+  safeCreate('chartFPSTrend', {
+    type: 'bar',
+    data: {
+      labels: ['2022', '2023', '2024', '2025A'],
+      datasets: [{
+        label: 'PC Shooter 매출 (조원)', data: [10.2,9.8,9.5,9.0].map(v=>Math.round(v*AppState.exchangeRate/100)/10),
+        backgroundColor: ['rgba(58,134,255,0.65)','rgba(58,134,255,0.55)','rgba(255,140,66,0.65)','rgba(255,59,92,0.8)'],
+        borderColor: ['#3A86FF','#3A86FF','#FF8C42','#FF3B5C'], borderWidth: 1.5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+      },
+      scales: {
+        x: { grid: { display: false }},
+        y: {
+          grid: { color: 'rgba(0,212,255,0.05)' },
+          ticks: { callback: v => fmtJo(v) },
+          min: Math.round(7*AppState.exchangeRate/100)/10,
+          max: Math.round(12*AppState.exchangeRate/100)/10,
+        },
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  applyRate();
+  renderInsights();
+  renderRisks();
+  renderRiskCards();
+  renderArchive();
+  renderSources();
+  renderValidation();
+  renderSidebar();
+  setTimeout(() => initV1Charts(), 100);
+  // 사이드바 안전망 — 500ms마다 비어있으면 재렌더
+  setInterval(() => ensureSidebar(), 500);
+});
+</script>
 </body>
 </html>
